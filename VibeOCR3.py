@@ -393,15 +393,7 @@ def paddleocr_fetch_results(jsonl_url):
     return all_texts, all_json_data
 
 
-def paddleocr_ocr(config, file_path):
-    """PaddleOCR-VL-1.6 完整流程：提交 -> 轮询 -> 获取结果"""
-    job_id = paddleocr_submit_job(config, file_path)
-    jsonl_url = paddleocr_poll_job(config, job_id)
-    all_texts, all_json_data = paddleocr_fetch_results(jsonl_url)
-    return all_texts, all_json_data
-
-
-# ===================== PP-OCRv6 异步任务支持 =====================
+# ===================== PaddleOCR 异步任务通用支持 (VL-1.6 / v6) =====================
 
 def paddleocr_v6_fetch_results(jsonl_url):
     """下载并解析 PP-OCRv6 jsonl 结果，返回 (文本列表, 原始json数据列表)
@@ -450,12 +442,14 @@ def paddleocr_v6_fetch_results(jsonl_url):
     return all_texts, all_json_data
 
 
-def paddleocr_v6_ocr(config, file_path):
-    """PP-OCRv6 完整流程：提交 -> 轮询 -> 获取结果"""
+def run_paddleocr_async(config, file_path):
+    """PaddleOCR 异步任务通用流程（VL / v6 共用）：提交 -> 轮询 -> 获取结果
+    根据 config.content_format 自动选择解析方式"""
     job_id = paddleocr_submit_job(config, file_path)
     jsonl_url = paddleocr_poll_job(config, job_id)
-    all_texts, all_json_data = paddleocr_v6_fetch_results(jsonl_url)
-    return all_texts, all_json_data
+    if config["content_format"] == "paddleocr_v6":
+        return paddleocr_v6_fetch_results(jsonl_url)
+    return paddleocr_fetch_results(jsonl_url)
 
 
 # ===================== MinerU Precision Extract API (v4) 支持 =====================
@@ -736,74 +730,54 @@ def save_async_results(all_texts, all_json_data, config, pdf_path, content_forma
     if content_format in ("paddleocr_async", "paddleocr_v6"):
         print(f"   共处理 {len(all_texts)} 条结果")
 
-def main():
-    if not os.path.exists(PDF_PATH):
-        print(f"❌ 找不到: {PDF_PATH}")
-        sys.exit(1)
 
-    model_key = None
+# ===================== 子流程函数 =====================
+
+def parse_model_key():
+    """从命令行参数解析 --model，返回 model_key"""
     for i, arg in enumerate(sys.argv):
         if arg == "--model" and i + 1 < len(sys.argv):
-            model_key = sys.argv[i + 1]
+            return sys.argv[i + 1]
+    return None
 
-    config = load_model_config(model_key)
-    content_format = config.get("content_format", "openai")
-    is_async = content_format in ("paddleocr_async", "paddleocr_v6", "mineru_async")
 
-    # 从模型配置中读取 batch_size，默认为 1
+def run_async_ocr(config, pdf_path):
+    """运行异步 OCR 任务，返回 (all_texts, all_json_data)"""
+    content_format = config["content_format"]
+
+    if content_format in ("paddleocr_async", "paddleocr_v6"):
+        label = "PaddleOCR-VL-1.6" if content_format == "paddleocr_async" else "PP-OCRv6"
+        print(f"🔧 {label} 异步任务模式")
+        print("   直接上传PDF文件，无需预先转图片\n")
+        return run_paddleocr_async(config, pdf_path)
+
+    elif content_format == "mineru_async":
+        print("🔧 MinerU Precision Extract API (v4)")
+        print("   申请上传URL -> PUT上传 -> 轮询结果 -> 下载zip提取markdown\n")
+        return mineru_ocr(config, pdf_path)
+
+    else:
+        raise ValueError(f"未知异步格式: {content_format}")
+
+
+def run_llm_ocr(config, pdf_path):
+    """运行 LLM OCR 模式：PDF转图片 -> 分批OCR -> 保存结果"""
+    model_key = config["model_key"]
     batch_size = config.get("batch_size", 1)
+    basename = os.path.splitext(pdf_path)[0]
 
-    print(f"📄 处理: {PDF_PATH}")
-    print(f"🤖 模型: {config['name']} ({config['model_key']})")
-    if not is_async:
-        print(f"⚙️  每批{batch_size}页, DPI={DPI}")
-    if "note" in config:
-        print(f"📝 {config['note']}")
-    print()
-
-    # ===================== 异步任务模式 (PaddleOCR / PP-OCRv6 / MinerU) =====================
-    if is_async:
-        if content_format == "paddleocr_async":
-            print("🔧 PaddleOCR-VL-1.6 异步任务模式")
-            print("   直接上传PDF文件，无需预先转图片\n")
-            try:
-                all_texts, all_json_data = paddleocr_ocr(config, PDF_PATH)
-            except Exception as e:
-                print(f"❌ PaddleOCR-VL 处理失败: {e}")
-                sys.exit(1)
-        elif content_format == "paddleocr_v6":
-            print("🔧 PP-OCRv6 异步任务模式")
-            print("   直接上传PDF文件，无需预先转图片\n")
-            try:
-                all_texts, all_json_data = paddleocr_v6_ocr(config, PDF_PATH)
-            except Exception as e:
-                print(f"❌ PP-OCRv6 处理失败: {e}")
-                sys.exit(1)
-        elif content_format == "mineru_async":
-            print("🔧 MinerU Precision Extract API (v4)")
-            print("   申请上传URL -> PUT上传 -> 轮询结果 -> 下载zip提取markdown\n")
-            try:
-                all_texts, all_json_data = mineru_ocr(config, PDF_PATH)
-            except Exception as e:
-                print(f"❌ MinerU 处理失败: {e}")
-                sys.exit(1)
-
-        save_async_results(all_texts, all_json_data, config, PDF_PATH, content_format)
-        return
-
-    # ===================== 原有 LLM OCR 模式 =====================
+    # PDF转图片
     print("🔧 PDF转图片...")
-    all_images, total_pages = pdf_pages_to_b64(PDF_PATH, dpi=DPI, max_width=MAX_WIDTH)
-
+    all_images, total_pages = pdf_pages_to_b64(pdf_path, dpi=DPI, max_width=MAX_WIDTH)
     print(f"\n🚀 开始OCR（共{total_pages}页）...")
+
+    # 分批运行OCR
     all_texts = []
     step = batch_size
-
     for start in range(0, total_pages, step):
         end = min(start + batch_size, total_pages)
         batch_images = all_images[start:end]
         batch_info = f"第{start+1}-{end}页 (共{total_pages}页)"
-
         print(f"\n📦 批次 {len(all_texts)+1}: {batch_info}")
 
         try:
@@ -813,7 +787,8 @@ def main():
             print(f"❌ 批次 {len(all_texts)+1} 最终失败: {e}")
             all_texts.append(f"\n\n[第{start+1}-{end}页识别失败]\n\n")
 
-    raw_out = os.path.splitext(PDF_PATH)[0] + "_" + config["model_key"] + "_raw.txt"
+    # 保存原始结果
+    raw_out = f"{basename}_{model_key}_raw.txt"
     with open(raw_out, "w", encoding="utf-8") as f:
         for i, text in enumerate(all_texts):
             f.write(f"\n{'='*60}\n")
@@ -823,16 +798,50 @@ def main():
             f.write("\n\n")
     print(f"\n📝 原始结果已保存: {raw_out}")
 
+    # 后处理
     print("\n🔧 后处理...")
     full_text = "\n\n".join(all_texts)
     full_text = postprocess.process(full_text)
 
-    out = os.path.splitext(PDF_PATH)[0] + "_" + config["model_key"] + ".txt"
+    out = f"{basename}_{model_key}.txt"
     with open(out, "w", encoding="utf-8") as f:
         f.write(full_text)
 
     print(f"\n✅ 完成！总计 {len(full_text)} 字符 → {out}")
     print(f"   共处理 {len(all_texts)} 个批次")
+
+
+def main():
+    """主入口：参数解析 -> 模型加载 -> 模式分发 -> 保存结果"""
+    if not os.path.exists(PDF_PATH):
+        print(f"❌ 找不到: {PDF_PATH}")
+        sys.exit(1)
+
+    config = load_model_config(parse_model_key())
+    content_format = config.get("content_format", "openai")
+    is_async = content_format in ("paddleocr_async", "paddleocr_v6", "mineru_async")
+
+    # 打印概要信息
+    print(f"📄 处理: {PDF_PATH}")
+    print(f"🤖 模型: {config['name']} ({config['model_key']})")
+    if not is_async:
+        batch_size = config.get("batch_size", 1)
+        print(f"⚙️  每批{batch_size}页, DPI={DPI}")
+    if "note" in config:
+        print(f"📝 {config['note']}")
+    print()
+
+    # 模式分发
+    if is_async:
+        try:
+            all_texts, all_json_data = run_async_ocr(config, PDF_PATH)
+        except Exception as e:
+            model_name = config["content_format"]
+            print(f"❌ {model_name} 处理失败: {e}")
+            sys.exit(1)
+        save_async_results(all_texts, all_json_data, config, PDF_PATH, content_format)
+    else:
+        run_llm_ocr(config, PDF_PATH)
 
 
 if __name__ == "__main__":
