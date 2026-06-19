@@ -114,7 +114,6 @@ VibeOCR/
 ├── module_deduplication.py    # 基于指纹的跨批次去重（独立工具）
 ├── utils_clean_text.py   # 独立文本清理 CLI
 ├── utils_map_p_br.py     # OCR 段落空白映射工具
-├── add_br_to_ocr.py      # 基于几何间距的段落检测
 ├── batch_ocr.bat         # Windows 批处理脚本
 ├── README.md             # 项目介绍
 ├── SPEC.md               # 项目开发规划书
