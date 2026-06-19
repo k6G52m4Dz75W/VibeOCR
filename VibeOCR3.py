@@ -61,7 +61,7 @@ def load_model_config(model_key=None):
     if not api_key and config_module:
         api_key = getattr(config_module, api_key_env, None)
 
-    if not api_key or api_key in ("nvapi-xxxxxxxx", "sk-xxxxxxxx", "sk-ant-xxxxxxxx", "your-key-here", "your-api-key-here"):
+    if not api_key:
         print(f"⚠️  警告: API Key 未配置")
         print(f"   环境变量: export {api_key_env}=your_key")
         if config_module:
