@@ -627,15 +627,15 @@ def mineru_download_and_extract(zip_url):
     resp = requests.get(zip_url, timeout=120)
     resp.raise_for_status()
 
-    # 使用临时文件保存 zip
-    with tempfile.NamedTemporaryFile(suffix=".zip", delete=False) as tmp:
-        tmp.write(resp.content)
-        tmp_path = tmp.name
-
     md_content = ""
     json_data = {}
 
-    try:
+    # 使用 TemporaryDirectory 自动清理，无需手动 os.unlink
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = os.path.join(tmp_dir, "result.zip")
+        with open(tmp_path, "wb") as tmp:
+            tmp.write(resp.content)
+
         with zipfile.ZipFile(tmp_path, 'r') as zf:
             # 查找 full.md
             md_file = None
@@ -678,8 +678,6 @@ def mineru_download_and_extract(zip_url):
 
         print(f"✅ 提取完成，md 共 {len(md_content)} 字符")
         return md_content, json_data
-    finally:
-        os.unlink(tmp_path)
 
 
 def mineru_ocr(config, file_path):
