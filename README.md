@@ -8,12 +8,12 @@
 
 ## 🌟 简介
 
-**VibeOCR** 是一个由 AI 驱动的端到端书籍光学字符识别（OCR）工具。它支持多种主流 AI 模型（包括 DeepSeek-OCR、GPT-4o、Claude、Kimi、PaddleOCR-VL、MinerU 等），可以将扫描版 PDF 或图片中的文字提取为干净的纯文本。
+**VibeOCR** 是一个由 AI 驱动的端到端书籍光学字符识别（OCR）工具。它支持多种主流 AI 模型（包括 DeepSeek-OCR、GPT-4o、Claude、Kimi、PaddleOCR-VL、PP-OCRv6、MinerU 等），可以将扫描版 PDF 或图片中的文字提取为干净的纯文本。
 
 ### 核心特性
 
-- 🔄 **多模型支持** — 支持 10+ 种模型/API，根据精度、成本和速度灵活切换
-- 📄 **PDF 直传** — 异步模式支持整个 PDF 直接上传（PaddleOCR-VL / MinerU），无需预先转图片
+- 🔄 **多模型支持** — 支持 11 种模型/API，根据精度、成本和速度灵活切换
+- 📄 **PDF 直传** — 异步模式支持整个 PDF 直接上传（PaddleOCR-VL / PP-OCRv6 / MinerU），无需预先转图片
 - 🧹 **智能后处理** — 自动清理 OCR 标签、合并断行段落、转换标点为中文全角
 - 📦 **批处理** — 支持目录级别批量处理 PDF / JPG / PNG 等常见格式
 - 💰 **成本可控** — 从免费/低成本的 DeepSeek-OCR 到高精度的 MinerU，满足不同预算
@@ -73,7 +73,8 @@ python clean_text.py input.txt output.txt
 |-------------|---------|------|------|------|
 | `siliconflow_deepseek-ocr` | 普通书籍、小说 | 💰低 | ⭐⭐⭐ | ⚡快 |
 | `mineru_precision` | 高精度扫描件、复杂版式 | 💰中 | ⭐⭐⭐⭐⭐ | 🐢慢（异步） |
-| `paddleocr_vl` | 中文文档、古籍 | 💰低 | ⭐⭐⭐⭐ | 🐢慢（异步） |
+| `paddleocr_vl` | 中文文档、古籍（Markdown输出） | 💰低 | ⭐⭐⭐⭐ | 🐢慢（异步） |
+| `paddleocr_v6` | 快速纯文本身份、简单版面 | 💰低 | ⭐⭐⭐ | 🐢慢（异步） |
 | `nvidia_kimi` | 中英文书籍、高通量 | 💰中 | ⭐⭐⭐⭐ | ⚡⚡快 |
 | `moonshot_kimi` | 中文长文档 | 💰中 | ⭐⭐⭐⭐ | ⚡快 |
 | `nvidia_nemotron` | 超大上下文需求 | 💰中 | ⭐⭐⭐ | ⚡⚡快 |
@@ -153,7 +154,7 @@ python VibeOCR3.py /path/to/book.pdf
 
 | 状态 | 内容 |
 |------|------|
-| ✅ 可用 | 核心 OCR 功能、10 种模型、批处理、后处理 |
+| ✅ 可用 | 核心 OCR 功能、11 种模型、批处理、后处理 |
 | ✅ 已修复 | .gitignore / requirements.txt, 删 deprecated/, PaddleOCR Content-Type, 异步结果抽取公共函数, print 统一 f-string, 清空行 |
 | 🔧 待改进 | 见 [SPEC.md](SPEC.md) 第 4 节「代码审查报告」 |
 | 📋 路线图 | 见 [SPEC.md](SPEC.md) 第 5 节「开发路线图」 |

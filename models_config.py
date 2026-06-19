@@ -228,6 +228,26 @@ Requirements:
         "prompt": None  # PaddleOCR-VL 不需要 prompt，通过 optionalPayload 控制行为
     },
 
+    "paddleocr_v6": {
+        "name": "PP-OCRv6 (AIStudio 异步API)",
+        "api_url": "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs",
+        "model_id": "PP-OCRv6",
+        "api_key_env": "PADDLEOCR_API_KEY",
+        "batch_size": 1,  # 异步任务，一次提交整个PDF
+        "headers": {
+            "Accept": "application/json"
+        },
+        "payload_template": {
+            "useDocOrientationClassify": False,
+            "useDocUnwarping": False,
+            "useTextlineOrientation": False
+        },
+        "timeout": 30,
+        "content_format": "paddleocr_v6",
+        "note": "异步任务模式：提交PDF后轮询获取结果，结果返回ocrResults结构（含识别文本和区域图片URL）。",
+        "prompt": None
+    },
+
     "mineru_precision": {
         "name": "MinerU Precision Extract API (v4)",
         "api_url": "https://mineru.net/api/v4",

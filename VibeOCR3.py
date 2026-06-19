@@ -401,6 +401,63 @@ def paddleocr_ocr(config, file_path):
     return all_texts, all_json_data
 
 
+# ===================== PP-OCRv6 异步任务支持 =====================
+
+def paddleocr_v6_fetch_results(jsonl_url):
+    """下载并解析 PP-OCRv6 jsonl 结果，返回 (文本列表, 原始json数据列表)
+    
+    PP-OCRv6 结果与 PaddleOCR-VL 使用相同 jsonl 格式，但字段结构不同：
+    - PP-OCRv6: result.ocrResults[].text + .ocrImage
+    - PaddleOCR-VL: result.layoutParsingResults[].markdown.text
+    """
+    print(f"📥 下载结果: {jsonl_url}")
+    jsonl_response = requests.get(jsonl_url, timeout=60)
+    jsonl_response.raise_for_status()
+
+    lines = jsonl_response.text.strip().split('\n')
+    all_texts = []
+    all_json_data = []
+    page_num = 0
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            parsed = json.loads(line)
+            result = parsed["result"]
+
+            # 构建每页的结构化数据（含完整的 result 原始数据 + 页面索引）
+            page_data = {
+                "page_index": page_num,
+                "result": result
+            }
+            all_json_data.append(page_data)
+
+            # 解析 PP-OCRv6 的 ocrResults 结构
+            ocr_results = result.get("ocrResults", [])
+            for res in ocr_results:
+                text = res.get("text", "")
+                if text.strip():
+                    all_texts.append(text)
+                page_num += 1
+
+        except (json.JSONDecodeError, KeyError) as e:
+            print(f"  ⚠️  解析结果行失败: {e}")
+            continue
+
+    print(f"✅ 共解析 {len(all_texts)} 条 OCR 结果")
+    return all_texts, all_json_data
+
+
+def paddleocr_v6_ocr(config, file_path):
+    """PP-OCRv6 完整流程：提交 -> 轮询 -> 获取结果"""
+    job_id = paddleocr_submit_job(config, file_path)
+    jsonl_url = paddleocr_poll_job(config, job_id)
+    all_texts, all_json_data = paddleocr_v6_fetch_results(jsonl_url)
+    return all_texts, all_json_data
+
+
 # ===================== MinerU Precision Extract API (v4) 支持 =====================
 
 def mineru_get_upload_url(config, file_path, max_retries=3, retry_delay=5):
@@ -659,8 +716,8 @@ def save_async_results(all_texts, all_json_data, config, pdf_path, content_forma
     with open(raw_out, "w", encoding="utf-8") as f:
         for i, text in enumerate(all_texts):
             f.write(f"\n{'='*60}\n")
-            if content_format == "paddleocr_async":
-                f.write(f"第 {i+1} 页 (共 {len(all_texts)} 页)\n")
+            if content_format in ("paddleocr_async", "paddleocr_v6"):
+                f.write(f"第 {i+1} 条 (共 {len(all_texts)} 条)\n")
             else:
                 f.write(f"结果 {i+1} (共 {len(all_texts)} 个)\n")
             f.write(f"{'='*60}\n\n")
@@ -678,8 +735,8 @@ def save_async_results(all_texts, all_json_data, config, pdf_path, content_forma
         f.write(full_text)
 
     print(f"\n✅ 完成！总计 {len(full_text)} 字符 → {out}")
-    if content_format == "paddleocr_async":
-        print(f"   共处理 {len(all_texts)} 页")
+    if content_format in ("paddleocr_async", "paddleocr_v6"):
+        print(f"   共处理 {len(all_texts)} 条结果")
 
 def main():
     if not os.path.exists(PDF_PATH):
@@ -693,7 +750,7 @@ def main():
 
     config = load_model_config(model_key)
     content_format = config.get("content_format", "openai")
-    is_async = content_format in ("paddleocr_async", "mineru_async")
+    is_async = content_format in ("paddleocr_async", "paddleocr_v6", "mineru_async")
 
     # 从模型配置中读取 batch_size，默认为 1
     batch_size = config.get("batch_size", 1)
@@ -706,7 +763,7 @@ def main():
         print(f"📝 {config['note']}")
     print()
 
-    # ===================== 异步任务模式 (PaddleOCR / MinerU) =====================
+    # ===================== 异步任务模式 (PaddleOCR / PP-OCRv6 / MinerU) =====================
     if is_async:
         if content_format == "paddleocr_async":
             print("🔧 PaddleOCR-VL-1.6 异步任务模式")
@@ -715,6 +772,14 @@ def main():
                 all_texts, all_json_data = paddleocr_ocr(config, PDF_PATH)
             except Exception as e:
                 print(f"❌ PaddleOCR-VL 处理失败: {e}")
+                sys.exit(1)
+        elif content_format == "paddleocr_v6":
+            print("🔧 PP-OCRv6 异步任务模式")
+            print("   直接上传PDF文件，无需预先转图片\n")
+            try:
+                all_texts, all_json_data = paddleocr_v6_ocr(config, PDF_PATH)
+            except Exception as e:
+                print(f"❌ PP-OCRv6 处理失败: {e}")
                 sys.exit(1)
         elif content_format == "mineru_async":
             print("🔧 MinerU Precision Extract API (v4)")
