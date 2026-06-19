@@ -31,7 +31,7 @@ cd VibeOCR
 pip install -r requirements.txt
 
 # 3. （可选）创建 .gitignore 以保护配置
-#    项目已自带 .gitignore，确认 config.py 已被排除
+# 3. （可选）参考 config-sample.py 了解各平台 API Key 变量名
 ```
 
 ### 配置 API Key
@@ -98,8 +98,8 @@ book_nvidia_kimi.json       ← 异步模型的结构化 JSON 数据
 ```
 VibeOCR/
 ├── VibeOCR3.py           # 主程序 — OCR 核心逻辑
-├── config.py             # API Key 配置（勿提交到 git!）
-├── .gitignore            # Git 忽略规则（排除 config.py 等敏感文件）
+├── config-sample.py      # API Key 配置参考模板（无实际密钥，附申请链接）
+├── .gitignore            # Git 忽略规则
 ├── requirements.txt      # Python 依赖清单（pip install -r requirements.txt）
 ├── models_config.py      # 模型配置字典（10+ 模型）
 ├── postprocess.py        # 后处理流水线入口
@@ -146,16 +146,17 @@ python VibeOCR3.py /path/to/book.pdf
 
 > **⚠️ 重要: 保护你的 API Key**
 
-1. 优先使用**环境变量**配置 API Key，而非直接修改 `config.py`
-2. 项目已自带 `.gitignore`，`config.py` 已被排除 —— 在添加真实密钥前确保这一点
-3. 定期轮换 API Key
+1. 始终通过**环境变量**配置 API Key（推荐方式），**不要**创建或填写 `config.py`
+2. `config-sample.py` 仅作为变量名参考模板，不包含任何真实密钥
+3. 如需使用配置文件方式，请将 `config-sample.py` **复制为 `config.py`** 再填写密钥，并确保 `config.py` 已被 `.gitignore` 排除
+4. 定期轮换 API Key
 
 ## 📊 当前状态
 
 | 状态 | 内容 |
 |------|------|
 | ✅ 可用 | 核心 OCR 功能、11 种模型、批处理、后处理 |
-| ✅ 已修复 | 全函数类型注解, 移除模块级全局变量, main() 拆分子函数, .gitignore / requirements.txt, 删 deprecated/, 移除 key 格式校验, PaddleOCR Content-Type, 异步结果公共函数, mineru 临时文件, print 统一 f-string, 清空行 |
+| ✅ 已修复 | 删除 config.py 改用环境变量, 全函数类型注解, 移除模块级全局变量, main() 拆分子函数, .gitignore / requirements.txt, 删 deprecated/, 移除 key 格式校验, PaddleOCR Content-Type, 异步结果公共函数, mineru 临时文件, print 统一 f-string, 清空行 |
 | 🔧 待改进 | 见 [SPEC.md](SPEC.md) 第 4 节「代码审查报告」 |
 | 📋 路线图 | 见 [SPEC.md](SPEC.md) 第 5 节「开发路线图」 |
 
