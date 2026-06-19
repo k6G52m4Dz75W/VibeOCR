@@ -134,7 +134,7 @@ def pdf_pages_to_b64(pdf_path, dpi=None, max_width=None):
             "image_url": {"url": "data:image/png;base64," + b64}
         })
         size_kb = len(buf.getvalue()) / 1024
-        print("  第" + str(i+1) + "/" + str(total) + "页已编码 (" + str(int(size_kb)) + "KB)")
+        print(f"  第{i+1}/{total}页已编码 ({int(size_kb)}KB)")
 
     doc.close()
     return images, total
@@ -148,7 +148,7 @@ def ocr_batch(config, images, batch_info, max_retries=3, retry_delay=5):
     content.extend(images)
 
     total_size = sum(len(img["image_url"]["url"]) for img in images)
-    print("  总base64大小: " + str(int(total_size/1024)) + "KB")
+    print(f"  总base64大小: {int(total_size/1024)}KB")
 
     payload = build_payload(config, content, batch_info)
     use_stream = payload.get("stream", False)
@@ -161,9 +161,9 @@ def ocr_batch(config, images, batch_info, max_retries=3, retry_delay=5):
     last_error = None
     for attempt in range(1, max_retries + 1):
         if can_use_openai:
-            print("  发送请求 [openai库] (尝试 " + str(attempt) + "/" + str(max_retries) + ", stream=" + str(use_stream) + ")...", end=" ")
+            print(f"  发送请求 [openai库] (尝试 {attempt}/{max_retries}, stream={use_stream})...", end=" ")
         else:
-            print("  发送请求 [requests] (尝试 " + str(attempt) + "/" + str(max_retries) + ", stream=" + str(use_stream) + ")...", end=" ")
+            print(f"  发送请求 [requests] (尝试 {attempt}/{max_retries}, stream={use_stream})...", end=" ")
         try:
             if can_use_openai:
                 # 使用 openai 库（更稳定，兼容性好）
@@ -192,10 +192,10 @@ def ocr_batch(config, images, batch_info, max_retries=3, retry_delay=5):
                     for chunk in response:
                         if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
                             text += chunk.choices[0].delta.content
-                    print("✅ " + str(len(text)) + "字符 (openai流式)")
+                    print(f"✅ {len(text)}字符 (openai流式)")
                 else:
                     text = response.choices[0].message.content
-                    print("✅ " + str(len(text)) + "字符 (openai非流式)")
+                    print(f"✅ {len(text)}字符 (openai非流式)")
             else:
                 # 使用 requests 手动发送（原有逻辑）
                 headers = build_headers(config)
@@ -219,7 +219,7 @@ def ocr_batch(config, images, batch_info, max_retries=3, retry_delay=5):
                                         text += delta["content"]
                                 except json.JSONDecodeError:
                                     continue
-                    print("✅ " + str(len(text)) + "字符 (requests流式)")
+                    print(f"✅ {len(text)}字符 (requests流式)")
                 else:
                     data = resp.json()
                     fmt = config["content_format"]
@@ -227,18 +227,18 @@ def ocr_batch(config, images, batch_info, max_retries=3, retry_delay=5):
                         text = data["content"][0]["text"]
                     else:
                         text = data["choices"][0]["message"]["content"]
-                    print("✅ " + str(len(text)) + "字符 (requests非流式)")
+                    print(f"✅ {len(text)}字符 (requests非流式)")
 
             return text
         except Exception as e:
             last_error = e
-            print("❌ 失败: " + str(e))
+            print(f"❌ 失败: {e}")
             if attempt < max_retries:
-                print("  ⏳ " + str(retry_delay) + "秒后重试...")
+                print(f"  ⏳ {retry_delay}秒后重试...")
                 time.sleep(retry_delay)
                 retry_delay *= 2
             else:
-                print("  💥 已达到最大重试次数，放弃")
+                print(f"  💥 已达到最大重试次数，放弃")
 
     raise last_error
 
@@ -260,7 +260,7 @@ def paddleocr_submit_job(config, file_path, max_retries=3, retry_delay=5):
 
     last_error = None
     for attempt in range(1, max_retries + 1):
-        print("  发送请求 (尝试 " + str(attempt) + "/" + str(max_retries) + ")...", end=" ")
+        print(f"  发送请求 (尝试 {attempt}/{max_retries})...", end=" ")
         try:
             if file_path.startswith("http"):
                 # URL Mode
@@ -639,7 +639,7 @@ def mineru_ocr(config, file_path):
 
 def main():
     if not os.path.exists(PDF_PATH):
-        print("❌ 找不到: " + PDF_PATH)
+        print(f"❌ 找不到: {PDF_PATH}")
         sys.exit(1)
 
     model_key = None
@@ -654,12 +654,12 @@ def main():
     # 从模型配置中读取 batch_size，默认为 1
     batch_size = config.get("batch_size", 1)
 
-    print("📄 处理: " + PDF_PATH)
-    print("🤖 模型: " + config["name"] + " (" + config["model_key"] + ")")
+    print(f"📄 处理: {PDF_PATH}")
+    print(f"🤖 模型: {config['name']} ({config['model_key']})")
     if not is_async:
-        print("⚙️  每批" + str(batch_size) + "页, DPI=" + str(DPI))
+        print(f"⚙️  每批{batch_size}页, DPI={DPI}")
     if "note" in config:
-        print("📝 " + config["note"])
+        print(f"📝 {config['note']}")
     print()
 
     # ===================== 异步任务模式 (PaddleOCR / MinerU) =====================
@@ -670,7 +670,7 @@ def main():
             try:
                 all_texts, all_json_data = paddleocr_ocr(config, PDF_PATH)
             except Exception as e:
-                print("❌ PaddleOCR-VL 处理失败: " + str(e))
+                print(f"❌ PaddleOCR-VL 处理失败: {e}")
                 sys.exit(1)
 
             # 保存 JSON 结果
@@ -682,7 +682,7 @@ def main():
                     "total_pages": len(all_texts),
                     "pages": all_json_data
                 }, f, ensure_ascii=False, indent=2)
-            print("\n📋 JSON 结果已保存: " + json_out)
+            print(f"\n📋 JSON 结果已保存: {json_out}")
 
         elif content_format == "mineru_async":
             print("🔧 MinerU Precision Extract API (v4)")
@@ -691,7 +691,7 @@ def main():
                 # ========== 修改3: 接收两个返回值 ==========
                 all_texts, all_json_data = mineru_ocr(config, PDF_PATH)
             except Exception as e:
-                print("❌ MinerU 处理失败: " + str(e))
+                print(f"❌ MinerU 处理失败: {e}")
                 sys.exit(1)
 
             # ========== 修改4: 添加 JSON 保存（与 PaddleOCR 完全一致） ==========
@@ -703,7 +703,7 @@ def main():
                     "total_pages": len(all_texts),
                     "pages": all_json_data
                 }, f, ensure_ascii=False, indent=2)
-            print("\n📋 JSON 结果已保存: " + json_out)
+            print(f"\n📋 JSON 结果已保存: {json_out}")
 
         # 保存原始结果
         raw_out = os.path.splitext(PDF_PATH)[0] + "_" + config["model_key"] + "_raw.txt"
@@ -717,7 +717,7 @@ def main():
                 f.write(f"{'='*60}\n\n")
                 f.write(text)
                 f.write("\n\n")
-        print("\n📝 原始结果已保存: " + raw_out)
+        print(f"\n📝 原始结果已保存: {raw_out}")
 
         # 后处理
         print("\n🔧 后处理...")
@@ -728,32 +728,32 @@ def main():
         with open(out, "w", encoding="utf-8") as f:
             f.write(full_text)
 
-        print("\n✅ 完成！总计 " + str(len(full_text)) + " 字符 → " + out)
+        print(f"\n✅ 完成！总计 {len(full_text)} 字符 → {out}")
         if content_format == "paddleocr_async":
-            print("   共处理 " + str(len(all_texts)) + " 页")
+            print(f"   共处理 {len(all_texts)} 页")
         return
 
     # ===================== 原有 LLM OCR 模式 =====================
     print("🔧 PDF转图片...")
     all_images, total_pages = pdf_pages_to_b64(PDF_PATH, dpi=DPI, max_width=MAX_WIDTH)
 
-    print("\n🚀 开始OCR（共" + str(total_pages) + "页）...")
+    print(f"\n🚀 开始OCR（共{total_pages}页）...")
     all_texts = []
     step = batch_size
 
     for start in range(0, total_pages, step):
         end = min(start + batch_size, total_pages)
         batch_images = all_images[start:end]
-        batch_info = "第" + str(start+1) + "-" + str(end) + "页 (共" + str(total_pages) + "页)"
+        batch_info = f"第{start+1}-{end}页 (共{total_pages}页)"
 
-        print("\n📦 批次 " + str(len(all_texts)+1) + ": " + batch_info)
+        print(f"\n📦 批次 {len(all_texts)+1}: {batch_info}")
 
         try:
             text = ocr_batch(config, batch_images, batch_info)
             all_texts.append(text)
         except Exception as e:
-            print("❌ 批次 " + str(len(all_texts)+1) + " 最终失败: " + str(e))
-            all_texts.append("\n\n[第" + str(start+1) + "-" + str(end) + "页识别失败]\n\n")
+            print(f"❌ 批次 {len(all_texts)+1} 最终失败: {e}")
+            all_texts.append(f"\n\n[第{start+1}-{end}页识别失败]\n\n")
 
     raw_out = os.path.splitext(PDF_PATH)[0] + "_" + config["model_key"] + "_raw.txt"
     with open(raw_out, "w", encoding="utf-8") as f:
@@ -763,7 +763,7 @@ def main():
             f.write(f"{'='*60}\n\n")
             f.write(text)
             f.write("\n\n")
-    print("\n📝 原始结果已保存: " + raw_out)
+    print(f"\n📝 原始结果已保存: {raw_out}")
 
     print("\n🔧 后处理...")
     full_text = "\n\n".join(all_texts)
@@ -773,8 +773,8 @@ def main():
     with open(out, "w", encoding="utf-8") as f:
         f.write(full_text)
 
-    print("\n✅ 完成！总计 " + str(len(full_text)) + " 字符 → " + out)
-    print("   共处理 " + str(len(all_texts)) + " 个批次")
+    print(f"\n✅ 完成！总计 {len(full_text)} 字符 → {out}")
+    print(f"   共处理 {len(all_texts)} 个批次")
 
 
 if __name__ == "__main__":
