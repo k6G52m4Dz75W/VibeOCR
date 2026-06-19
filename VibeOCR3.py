@@ -6,6 +6,7 @@ import time
 import json
 import zipfile
 import tempfile
+from typing import Any
 
 try:
     import fitz
@@ -23,7 +24,7 @@ except ImportError:
 
 try:
     from openai import OpenAI
-    OPENAI_AVAILABLE = True
+    OPENAI_AVAILABLE: bool = True
 except ImportError:
     OPENAI_AVAILABLE = False
 
@@ -39,7 +40,7 @@ except ImportError:
     config_module = None
 
 
-def load_model_config(model_key=None):
+def load_model_config(model_key: str | None = None) -> dict[str, Any]:
     """加载模型配置，支持从参数、环境变量或 config.py 读取"""
     if model_key is None:
         model_key = os.environ.get("OCR_MODEL", DEFAULT_MODEL)
@@ -70,7 +71,7 @@ def load_model_config(model_key=None):
     return config
 
 
-def build_payload(config, content, batch_info):
+def build_payload(config: dict[str, Any], content: list[dict[str, Any]], batch_info: str) -> dict[str, Any]:
     """根据供应商格式构建请求体"""
     prompt = config.get("prompt", "请提取图片中的文本内容。")
     model_id = config["model_id"]
@@ -94,14 +95,14 @@ def build_payload(config, content, batch_info):
     return payload
 
 
-def build_headers(config):
+def build_headers(config: dict[str, Any]) -> dict[str, str]:
     """构建请求头"""
     headers = config["headers"].copy()
     headers["Authorization"] = f"Bearer {config['api_key']}"
     return headers
 
 
-def pdf_pages_to_b64(pdf_path, dpi=300, max_width=1600):
+def pdf_pages_to_b64(pdf_path: str, dpi: int = 300, max_width: int = 1600) -> tuple[list[dict[str, Any]], int]:
     doc = fitz.open(pdf_path)
     total = len(doc)
     images = []
@@ -131,7 +132,7 @@ def pdf_pages_to_b64(pdf_path, dpi=300, max_width=1600):
     return images, total
 
 
-def ocr_batch(config, images, batch_info, max_retries=3, retry_delay=5):
+def ocr_batch(config: dict[str, Any], images: list[dict[str, Any]], batch_info: str, max_retries: int = 3, retry_delay: int = 5) -> str:
     """发送一批图片OCR请求，支持失败重试，支持 stream 和非 stream 模式
     优先使用 openai 库（如果可用且配置了 base_url），否则使用 requests"""
     prompt = config.get("prompt", "请提取图片中的文本内容。")
@@ -236,7 +237,7 @@ def ocr_batch(config, images, batch_info, max_retries=3, retry_delay=5):
 
 # ===================== PaddleOCR-VL-1.6 异步任务支持 =====================
 
-def paddleocr_submit_job(config, file_path, max_retries=3, retry_delay=5):
+def paddleocr_submit_job(config: dict[str, Any], file_path: str, max_retries: int = 3, retry_delay: int = 5) -> str:
     """提交 PaddleOCR-VL-1.6 异步任务，返回 jobId"""
     job_url = config["api_url"]
     token = config["api_key"]
@@ -297,7 +298,7 @@ def paddleocr_submit_job(config, file_path, max_retries=3, retry_delay=5):
     raise last_error
 
 
-def paddleocr_poll_job(config, job_id, poll_interval=5):
+def paddleocr_poll_job(config: dict[str, Any], job_id: str, poll_interval: int = 5) -> str:
     """轮询 PaddleOCR-VL-1.6 任务状态，完成后返回 jsonl_url"""
     job_url = config["api_url"]
     token = config["api_key"]
@@ -345,7 +346,7 @@ def paddleocr_poll_job(config, job_id, poll_interval=5):
     return jsonl_url
 
 
-def paddleocr_fetch_results(jsonl_url):
+def paddleocr_fetch_results(jsonl_url: str) -> tuple[list[str], list[dict[str, Any]]]:
     """下载并解析 jsonl 结果，返回 (markdown文本列表, 原始json数据列表)"""
     print(f"📥 下载结果: {jsonl_url}")
     jsonl_response = requests.get(jsonl_url, timeout=60)
@@ -386,7 +387,7 @@ def paddleocr_fetch_results(jsonl_url):
 
 # ===================== PaddleOCR 异步任务通用支持 (VL-1.6 / v6) =====================
 
-def paddleocr_v6_fetch_results(jsonl_url):
+def paddleocr_v6_fetch_results(jsonl_url: str) -> tuple[list[str], list[dict[str, Any]]]:
     """下载并解析 PP-OCRv6 jsonl 结果，返回 (文本列表, 原始json数据列表)
     
     PP-OCRv6 结果与 PaddleOCR-VL 使用相同 jsonl 格式，但字段结构不同：
@@ -433,7 +434,7 @@ def paddleocr_v6_fetch_results(jsonl_url):
     return all_texts, all_json_data
 
 
-def run_paddleocr_async(config, file_path):
+def run_paddleocr_async(config: dict[str, Any], file_path: str) -> tuple[list[str], list[dict[str, Any]]]:
     """PaddleOCR 异步任务通用流程（VL / v6 共用）：提交 -> 轮询 -> 获取结果
     根据 config.content_format 自动选择解析方式"""
     job_id = paddleocr_submit_job(config, file_path)
@@ -445,7 +446,7 @@ def run_paddleocr_async(config, file_path):
 
 # ===================== MinerU Precision Extract API (v4) 支持 =====================
 
-def mineru_get_upload_url(config, file_path, max_retries=3, retry_delay=5):
+def mineru_get_upload_url(config: dict[str, Any], file_path: str, max_retries: int = 3, retry_delay: int = 5) -> tuple[str, str]:
     """申请 MinerU 文件上传 URL，返回 (batch_id, upload_url)"""
     base_url = config["api_url"]
     token = config["api_key"]
@@ -511,7 +512,7 @@ def mineru_get_upload_url(config, file_path, max_retries=3, retry_delay=5):
     raise last_error
 
 
-def mineru_upload_file(upload_url, file_path, max_retries=3, retry_delay=5):
+def mineru_upload_file(upload_url: str, file_path: str, max_retries: int = 3, retry_delay: int = 5) -> bool:
     """PUT 上传文件到 MinerU 的 signed URL"""
     print(f"📤 上传文件到 MinerU...")
 
@@ -537,7 +538,7 @@ def mineru_upload_file(upload_url, file_path, max_retries=3, retry_delay=5):
     raise last_error
 
 
-def mineru_poll_batch(config, batch_id, poll_interval=5, timeout=600):
+def mineru_poll_batch(config: dict[str, Any], batch_id: str, poll_interval: int = 5, timeout: int = 600) -> str:
     """轮询 MinerU batch 任务状态，完成后返回 full_zip_url"""
     base_url = config["api_url"]
     token = config["api_key"]
@@ -605,7 +606,7 @@ def mineru_poll_batch(config, batch_id, poll_interval=5, timeout=600):
         time.sleep(poll_interval)
 
 
-def mineru_download_and_extract(zip_url):
+def mineru_download_and_extract(zip_url: str) -> tuple[str, dict[str, Any]]:
     """下载 zip 并提取 full.md 内容和结构化 json 数据"""
     print(f"📥 下载结果 zip: {zip_url}")
 
@@ -665,7 +666,7 @@ def mineru_download_and_extract(zip_url):
         return md_content, json_data
 
 
-def mineru_ocr(config, file_path):
+def mineru_ocr(config: dict[str, Any], file_path: str) -> tuple[list[str], list[dict[str, Any]]]:
     """MinerU 完整流程：申请URL -> 上传文件 -> 轮询 -> 下载zip -> 提取md和json"""
     batch_id, upload_url = mineru_get_upload_url(config, file_path)
     mineru_upload_file(upload_url, file_path)
@@ -678,7 +679,7 @@ def mineru_ocr(config, file_path):
 
 # ===================== 异步任务结果统一处理 =====================
 
-def save_async_results(all_texts, all_json_data, config, pdf_path, content_format):
+def save_async_results(all_texts: list[str], all_json_data: list[dict[str, Any]], config: dict[str, Any], pdf_path: str, content_format: str) -> None:
     """异步任务结果统一处理：JSON保存 + raw保存 + 后处理"""
     model_key = config["model_key"]
     basename = os.path.splitext(pdf_path)[0]
@@ -724,7 +725,7 @@ def save_async_results(all_texts, all_json_data, config, pdf_path, content_forma
 
 # ===================== 子流程函数 =====================
 
-def parse_model_key():
+def parse_model_key() -> str | None:
     """从命令行参数解析 --model，返回 model_key"""
     for i, arg in enumerate(sys.argv):
         if arg == "--model" and i + 1 < len(sys.argv):
@@ -732,7 +733,7 @@ def parse_model_key():
     return None
 
 
-def run_async_ocr(config, pdf_path):
+def run_async_ocr(config: dict[str, Any], pdf_path: str) -> tuple[list[str], list[dict[str, Any]]]:
     """运行异步 OCR 任务，返回 (all_texts, all_json_data)"""
     content_format = config["content_format"]
 
@@ -751,7 +752,7 @@ def run_async_ocr(config, pdf_path):
         raise ValueError(f"未知异步格式: {content_format}")
 
 
-def run_llm_ocr(config, pdf_path):
+def run_llm_ocr(config: dict[str, Any], pdf_path: str) -> None:
     """运行 LLM OCR 模式：PDF转图片 -> 分批OCR -> 保存结果"""
     model_key = config["model_key"]
     batch_size = config.get("batch_size", 1)
@@ -802,7 +803,7 @@ def run_llm_ocr(config, pdf_path):
     print(f"   共处理 {len(all_texts)} 个批次")
 
 
-def main():
+def main() -> None:
     """主入口：参数解析 -> 模型加载 -> 模式分发 -> 保存结果"""
     pdf_path = sys.argv[1] if len(sys.argv) > 1 else "document.pdf"
     dpi = 300
