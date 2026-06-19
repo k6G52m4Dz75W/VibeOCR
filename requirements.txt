@@ -1,0 +1,24 @@
+# VibeOCR 依赖清单
+# 安装方式: pip install -r requirements.txt
+
+# === 核心依赖 ===
+
+# PDF 解析（导入为 fitz）
+pymupdf>=1.23.0
+
+# 图片处理（导入为 PIL）
+Pillow>=10.0.0
+
+# API HTTP 请求
+requests>=2.31.0
+
+# OpenAI SDK（用于兼容 openai 格式的 API 调用）
+openai>=1.0.0
+
+# === 辅助工具依赖 ===
+
+# 数值计算（add_br_to_ocr.py / map_br8.py 使用）
+numpy>=1.24.0
+
+# === 可选/运行时提示 ===
+# 如果遇到 ImportError，请确保上述依赖已全部安装

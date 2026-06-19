@@ -99,6 +99,7 @@ VibeOCR/
 ├── VibeOCR3.py           # 主程序 — OCR 核心逻辑
 ├── config.py             # API Key 配置（勿提交到 git!）
 ├── .gitignore            # Git 忽略规则（排除 config.py 等敏感文件）
+├── requirements.txt      # Python 依赖清单（pip install -r requirements.txt）
 ├── models_config.py      # 模型配置字典（10+ 模型）
 ├── postprocess.py        # 后处理流水线入口
 ├── cleaning.py           # 文本清理（标签/空行/空白）
@@ -155,7 +156,7 @@ python VibeOCR3.py /path/to/book.pdf
 | 状态 | 内容 |
 |------|------|
 | ✅ 可用 | 核心 OCR 功能、10 种模型、批处理、后处理 |
-| ✅ 已修复 | 添加 .gitignore, 清理 postprocess.py 空行, paragraphbreak.py 移入 deprecated |
+| ✅ 已修复 | 添加 .gitignore / requirements.txt, 清理 postprocess.py 空行, paragraphbreak.py 移入 deprecated |
 | 🔧 待改进 | 见 [SPEC.md](SPEC.md) 第 4 节「代码审查报告」 |
 | 📋 路线图 | 见 [SPEC.md](SPEC.md) 第 5 节「开发路线图」 |
 
