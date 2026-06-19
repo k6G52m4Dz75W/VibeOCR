@@ -38,10 +38,6 @@ try:
 except ImportError:
     config_module = None
 
-PDF_PATH = sys.argv[1] if len(sys.argv) > 1 else "document.pdf"
-DPI = 300
-MAX_WIDTH = 1600
-
 
 def load_model_config(model_key=None):
     """加载模型配置，支持从参数、环境变量或 config.py 读取"""
@@ -105,12 +101,7 @@ def build_headers(config):
     return headers
 
 
-def pdf_pages_to_b64(pdf_path, dpi=None, max_width=None):
-    if dpi is None:
-        dpi = DPI
-    if max_width is None:
-        max_width = MAX_WIDTH
-
+def pdf_pages_to_b64(pdf_path, dpi=300, max_width=1600):
     doc = fitz.open(pdf_path)
     total = len(doc)
     images = []
@@ -768,7 +759,7 @@ def run_llm_ocr(config, pdf_path):
 
     # PDF转图片
     print("🔧 PDF转图片...")
-    all_images, total_pages = pdf_pages_to_b64(pdf_path, dpi=DPI, max_width=MAX_WIDTH)
+    all_images, total_pages = pdf_pages_to_b64(pdf_path)
     print(f"\n🚀 开始OCR（共{total_pages}页）...")
 
     # 分批运行OCR
@@ -813,8 +804,12 @@ def run_llm_ocr(config, pdf_path):
 
 def main():
     """主入口：参数解析 -> 模型加载 -> 模式分发 -> 保存结果"""
-    if not os.path.exists(PDF_PATH):
-        print(f"❌ 找不到: {PDF_PATH}")
+    pdf_path = sys.argv[1] if len(sys.argv) > 1 else "document.pdf"
+    dpi = 300
+    max_width = 1600
+
+    if not os.path.exists(pdf_path):
+        print(f"❌ 找不到: {pdf_path}")
         sys.exit(1)
 
     config = load_model_config(parse_model_key())
@@ -822,11 +817,11 @@ def main():
     is_async = content_format in ("paddleocr_async", "paddleocr_v6", "mineru_async")
 
     # 打印概要信息
-    print(f"📄 处理: {PDF_PATH}")
+    print(f"📄 处理: {pdf_path}")
     print(f"🤖 模型: {config['name']} ({config['model_key']})")
     if not is_async:
         batch_size = config.get("batch_size", 1)
-        print(f"⚙️  每批{batch_size}页, DPI={DPI}")
+        print(f"⚙️  每批{batch_size}页, DPI={dpi}")
     if "note" in config:
         print(f"📝 {config['note']}")
     print()
@@ -834,14 +829,14 @@ def main():
     # 模式分发
     if is_async:
         try:
-            all_texts, all_json_data = run_async_ocr(config, PDF_PATH)
+            all_texts, all_json_data = run_async_ocr(config, pdf_path)
         except Exception as e:
             model_name = config["content_format"]
             print(f"❌ {model_name} 处理失败: {e}")
             sys.exit(1)
-        save_async_results(all_texts, all_json_data, config, PDF_PATH, content_format)
+        save_async_results(all_texts, all_json_data, config, pdf_path, content_format)
     else:
-        run_llm_ocr(config, PDF_PATH)
+        run_llm_ocr(config, pdf_path)
 
 
 if __name__ == "__main__":
