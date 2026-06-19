@@ -1,8 +1,8 @@
 # postprocess.py
-import cleaning
-import punctuation
-import heuristic_merge
-import deduplication
+import module_cleaning as cleaning
+import module_punctuation as punctuation
+import module_heuristic_merge as heuristic_merge
+import module_deduplication as deduplication
 
 
 def process(text, skip=None):

@@ -108,13 +108,12 @@ VibeOCR/
 ├── requirements.txt      # Python 依赖清单（pip install -r requirements.txt）
 ├── models_config.py      # 模型配置字典（10+ 模型）
 ├── postprocess.py        # 后处理流水线入口
-├── cleaning.py           # 文本清理（标签/空行/空白）
-├── punctuation.py        # 英文标点 → 中文全角
-├── heuristic_merge.py    # 断行段落合并
-├── deduplication.py      # 基于指纹的跨批次去重（独立工具）
+├── module_cleaning.py    # 文本清理（标签/空行/空白）
+├── module_punctuation.py # 英文标点 → 中文全角
+├── module_heuristic_merge.py  # 断行段落合并
+├── module_deduplication.py    # 基于指纹的跨批次去重（独立工具）
 ├── utils_clean_text.py   # 独立文本清理 CLI
 ├── utils_map_p_br.py     # OCR 段落空白映射工具
-├── insert_page_div.py    # 分页 <div> 标签嵌入工具
 ├── add_br_to_ocr.py      # 基于几何间距的段落检测
 ├── batch_ocr.bat         # Windows 批处理脚本
 ├── README.md             # 项目介绍
