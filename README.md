@@ -68,8 +68,8 @@ python VibeOCR3.py document.pdf --skip dedup,fullwidth_punct
 batch_ocr.bat D:\Documents --model mineru_precision
 
 # 独立后处理（对已有 OCR 结果进行清洗，可选 --skip）
-python clean_text.py input.txt output.txt
-python clean_text.py input.txt output.txt --skip dedup
+python utils_clean_text.py input.txt output.txt
+python utils_clean_text.py input.txt output.txt --skip dedup
 ```
 
 ## 🎯 模型选择指南
@@ -112,8 +112,8 @@ VibeOCR/
 ├── punctuation.py        # 英文标点 → 中文全角
 ├── heuristic_merge.py    # 断行段落合并
 ├── deduplication.py      # 基于指纹的跨批次去重（独立工具）
-├── clean_text.py         # 独立文本清理 CLI
-├── map_br8.py            # OCR 段落空白映射工具
+├── utils_clean_text.py   # 独立文本清理 CLI
+├── utils_map_p_br.py     # OCR 段落空白映射工具
 ├── insert_page_div.py    # 分页 <div> 标签嵌入工具
 ├── add_br_to_ocr.py      # 基于几何间距的段落检测
 ├── batch_ocr.bat         # Windows 批处理脚本

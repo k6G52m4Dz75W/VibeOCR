@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sys
+import os
 import postprocess
 
 
@@ -23,8 +24,8 @@ def main():
             i += 1
 
     if not input_file or not output_file:
-        print("❌ 用法错误！请运行：python clean_text.py <输入文件> <输出文件> [--skip 模块名1,模块名2]")
-        print("   示例：python clean_text.py input.txt output.txt --skip dedup")
+        print(f"❌ 用法错误！请运行：python {os.path.basename(sys.argv[0])} <输入文件> <输出文件> [--skip 模块名1,模块名2]")
+        print(f"   示例：python {os.path.basename(sys.argv[0])} input.txt output.txt --skip dedup")
         return
 
     # 读取

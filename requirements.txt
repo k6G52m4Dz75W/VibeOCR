@@ -17,7 +17,7 @@ openai>=1.0.0
 
 # === 辅助工具依赖 ===
 
-# 数值计算（add_br_to_ocr.py / map_br8.py 使用）
+# 数值计算（add_br_to_ocr.py / utils_map_p_br.py 使用）
 numpy>=1.24.0
 
 # === 可选/运行时提示 ===
