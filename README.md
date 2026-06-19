@@ -154,7 +154,7 @@ python VibeOCR3.py /path/to/book.pdf
 | 状态 | 内容 |
 |------|------|
 | ✅ 可用 | 核心 OCR 功能、10 种模型、批处理、后处理 |
-| ✅ 已修复 | 添加 .gitignore / requirements.txt, 删除 deprecated/, PaddleOCR Content-Type 修复, print 统一 f-string, 清空行 |
+| ✅ 已修复 | .gitignore / requirements.txt, 删 deprecated/, PaddleOCR Content-Type, 异步结果抽取公共函数, print 统一 f-string, 清空行 |
 | 🔧 待改进 | 见 [SPEC.md](SPEC.md) 第 4 节「代码审查报告」 |
 | 📋 路线图 | 见 [SPEC.md](SPEC.md) 第 5 节「开发路线图」 |
 

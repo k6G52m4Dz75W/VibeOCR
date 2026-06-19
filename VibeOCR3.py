@@ -563,7 +563,6 @@ def mineru_poll_batch(config, batch_id, poll_interval=5, timeout=600):
         time.sleep(poll_interval)
 
 
-# ========== 修改1: 重命名并扩展函数，同时提取 md 和 json ==========
 def mineru_download_and_extract(zip_url):
     """下载 zip 并提取 full.md 内容和结构化 json 数据"""
     print(f"📥 下载结果 zip: {zip_url}")
@@ -626,7 +625,6 @@ def mineru_download_and_extract(zip_url):
         os.unlink(tmp_path)
 
 
-# ========== 修改2: 返回格式与 paddleocr_ocr 一致 (all_texts, all_json_data) ==========
 def mineru_ocr(config, file_path):
     """MinerU 完整流程：申请URL -> 上传文件 -> 轮询 -> 下载zip -> 提取md和json"""
     batch_id, upload_url = mineru_get_upload_url(config, file_path)
@@ -638,7 +636,50 @@ def mineru_ocr(config, file_path):
     return [content], all_json_data
 
 
-# ===================== 主程序 =====================
+# ===================== 异步任务结果统一处理 =====================
+
+def save_async_results(all_texts, all_json_data, config, pdf_path, content_format):
+    """异步任务结果统一处理：JSON保存 + raw保存 + 后处理"""
+    model_key = config["model_key"]
+    basename = os.path.splitext(pdf_path)[0]
+
+    # --- 保存 JSON 结构化结果 ---
+    json_out = f"{basename}_{model_key}.json"
+    with open(json_out, "w", encoding="utf-8") as f:
+        json.dump({
+            "source": pdf_path,
+            "model": model_key,
+            "total_pages": len(all_texts),
+            "pages": all_json_data
+        }, f, ensure_ascii=False, indent=2)
+    print(f"\n📋 JSON 结果已保存: {json_out}")
+
+    # --- 保存原始结果（每页/结果用分隔线隔开） ---
+    raw_out = f"{basename}_{model_key}_raw.txt"
+    with open(raw_out, "w", encoding="utf-8") as f:
+        for i, text in enumerate(all_texts):
+            f.write(f"\n{'='*60}\n")
+            if content_format == "paddleocr_async":
+                f.write(f"第 {i+1} 页 (共 {len(all_texts)} 页)\n")
+            else:
+                f.write(f"结果 {i+1} (共 {len(all_texts)} 个)\n")
+            f.write(f"{'='*60}\n\n")
+            f.write(text)
+            f.write("\n\n")
+    print(f"\n📝 原始结果已保存: {raw_out}")
+
+    # --- 后处理 ---
+    print("\n🔧 后处理...")
+    full_text = "\n\n".join(all_texts)
+    full_text = postprocess.process(full_text)
+
+    out = f"{basename}_{model_key}.txt"
+    with open(out, "w", encoding="utf-8") as f:
+        f.write(full_text)
+
+    print(f"\n✅ 完成！总计 {len(full_text)} 字符 → {out}")
+    if content_format == "paddleocr_async":
+        print(f"   共处理 {len(all_texts)} 页")
 
 def main():
     if not os.path.exists(PDF_PATH):
@@ -675,65 +716,16 @@ def main():
             except Exception as e:
                 print(f"❌ PaddleOCR-VL 处理失败: {e}")
                 sys.exit(1)
-
-            # 保存 JSON 结果
-            json_out = os.path.splitext(PDF_PATH)[0] + "_" + config["model_key"] + ".json"
-            with open(json_out, "w", encoding="utf-8") as f:
-                json.dump({
-                    "source": PDF_PATH,
-                    "model": config["model_key"],
-                    "total_pages": len(all_texts),
-                    "pages": all_json_data
-                }, f, ensure_ascii=False, indent=2)
-            print(f"\n📋 JSON 结果已保存: {json_out}")
-
         elif content_format == "mineru_async":
             print("🔧 MinerU Precision Extract API (v4)")
             print("   申请上传URL -> PUT上传 -> 轮询结果 -> 下载zip提取markdown\n")
             try:
-                # ========== 修改3: 接收两个返回值 ==========
                 all_texts, all_json_data = mineru_ocr(config, PDF_PATH)
             except Exception as e:
                 print(f"❌ MinerU 处理失败: {e}")
                 sys.exit(1)
 
-            # ========== 修改4: 添加 JSON 保存（与 PaddleOCR 完全一致） ==========
-            json_out = os.path.splitext(PDF_PATH)[0] + "_" + config["model_key"] + ".json"
-            with open(json_out, "w", encoding="utf-8") as f:
-                json.dump({
-                    "source": PDF_PATH,
-                    "model": config["model_key"],
-                    "total_pages": len(all_texts),
-                    "pages": all_json_data
-                }, f, ensure_ascii=False, indent=2)
-            print(f"\n📋 JSON 结果已保存: {json_out}")
-
-        # 保存原始结果
-        raw_out = os.path.splitext(PDF_PATH)[0] + "_" + config["model_key"] + "_raw.txt"
-        with open(raw_out, "w", encoding="utf-8") as f:
-            for i, text in enumerate(all_texts):
-                f.write(f"\n{'='*60}\n")
-                if content_format == "paddleocr_async":
-                    f.write(f"第 {i+1} 页 (共 {len(all_texts)} 页)\n")
-                else:
-                    f.write(f"结果 {i+1} (共 {len(all_texts)} 个)\n")
-                f.write(f"{'='*60}\n\n")
-                f.write(text)
-                f.write("\n\n")
-        print(f"\n📝 原始结果已保存: {raw_out}")
-
-        # 后处理
-        print("\n🔧 后处理...")
-        full_text = "\n\n".join(all_texts)
-        full_text = postprocess.process(full_text)
-
-        out = os.path.splitext(PDF_PATH)[0] + "_" + config["model_key"] + ".txt"
-        with open(out, "w", encoding="utf-8") as f:
-            f.write(full_text)
-
-        print(f"\n✅ 完成！总计 {len(full_text)} 字符 → {out}")
-        if content_format == "paddleocr_async":
-            print(f"   共处理 {len(all_texts)} 页")
+        save_async_results(all_texts, all_json_data, config, PDF_PATH, content_format)
         return
 
     # ===================== 原有 LLM OCR 模式 =====================
