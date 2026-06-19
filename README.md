@@ -113,9 +113,7 @@ VibeOCR/
 ├── batch_ocr.bat         # Windows 批处理脚本
 ├── README.md             # 项目介绍
 ├── SPEC.md               # 项目开发规划书
-├── LICENSE               # MIT 许可证
-└── deprecated/           # 历史版本归档
-    └── paragraphbreak.py # （已弃用）段落分割
+└── LICENSE               # MIT 许可证
 ```
 
 ## 🔧 高级用法
@@ -156,7 +154,7 @@ python VibeOCR3.py /path/to/book.pdf
 | 状态 | 内容 |
 |------|------|
 | ✅ 可用 | 核心 OCR 功能、10 种模型、批处理、后处理 |
-| ✅ 已修复 | 添加 .gitignore / requirements.txt, 清理 postprocess.py 空行, paragraphbreak.py 移入 deprecated |
+| ✅ 已修复 | 添加 .gitignore / requirements.txt, 删除 deprecated/ 目录, 清理 postprocess.py 空行 |
 | 🔧 待改进 | 见 [SPEC.md](SPEC.md) 第 4 节「代码审查报告」 |
 | 📋 路线图 | 见 [SPEC.md](SPEC.md) 第 5 节「开发路线图」 |
 

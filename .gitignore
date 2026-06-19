@@ -181,7 +181,5 @@ cython_debug/
 .cursorindexingignore
 
 /.workbuddy
-/deprecated
-deprecated/
 config.py
 SPEC.md
