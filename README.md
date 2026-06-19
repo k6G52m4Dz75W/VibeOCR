@@ -29,6 +29,9 @@ cd VibeOCR
 
 # 2. 安装依赖
 pip install -r requirements.txt
+
+# 3. （可选）创建 .gitignore 以保护配置
+#    项目已自带 .gitignore，确认 config.py 已被排除
 ```
 
 ### 配置 API Key
@@ -95,6 +98,7 @@ book_nvidia_kimi.json       ← 异步模型的结构化 JSON 数据
 VibeOCR/
 ├── VibeOCR3.py           # 主程序 — OCR 核心逻辑
 ├── config.py             # API Key 配置（勿提交到 git!）
+├── .gitignore            # Git 忽略规则（排除 config.py 等敏感文件）
 ├── models_config.py      # 模型配置字典（10+ 模型）
 ├── postprocess.py        # 后处理流水线入口
 ├── cleaning.py           # 文本清理（标签/空行/空白）
@@ -105,11 +109,12 @@ VibeOCR/
 ├── map_br8.py            # OCR 段落空白映射工具
 ├── insert_page_div.py    # 分页 <div> 标签嵌入工具
 ├── add_br_to_ocr.py      # 基于几何间距的段落检测
-├── paragraphbreak.py     # （旧版，未引用）
 ├── batch_ocr.bat         # Windows 批处理脚本
 ├── README.md             # 项目介绍
 ├── SPEC.md               # 项目开发规划书
+├── LICENSE               # MIT 许可证
 └── deprecated/           # 历史版本归档
+    └── paragraphbreak.py # （已弃用）段落分割
 ```
 
 ## 🔧 高级用法
@@ -142,7 +147,7 @@ python VibeOCR3.py /path/to/book.pdf
 > **⚠️ 重要: 保护你的 API Key**
 
 1. 优先使用**环境变量**配置 API Key，而非直接修改 `config.py`
-2. 如果使用 `config.py`，**务必**将其加入 `.gitignore`
+2. 项目已自带 `.gitignore`，`config.py` 已被排除 —— 在添加真实密钥前确保这一点
 3. 定期轮换 API Key
 
 ## 📊 当前状态
@@ -150,6 +155,7 @@ python VibeOCR3.py /path/to/book.pdf
 | 状态 | 内容 |
 |------|------|
 | ✅ 可用 | 核心 OCR 功能、10 种模型、批处理、后处理 |
+| ✅ 已修复 | 添加 .gitignore, 清理 postprocess.py 空行, paragraphbreak.py 移入 deprecated |
 | 🔧 待改进 | 见 [SPEC.md](SPEC.md) 第 4 节「代码审查报告」 |
 | 📋 路线图 | 见 [SPEC.md](SPEC.md) 第 5 节「开发路线图」 |
 
