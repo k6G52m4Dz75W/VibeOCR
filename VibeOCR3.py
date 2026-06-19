@@ -284,6 +284,9 @@ def paddleocr_submit_job(config, file_path, max_retries=3, retry_delay=5):
                     files = {"file": f}
                     job_response = requests.post(job_url, headers=headers, data=data, files=files, timeout=config.get("timeout", 30))
 
+            # 检查 HTTP 状态码，非 200 时输出响应体辅助排查
+            if job_response.status_code != 200:
+                print(f"  ⚠️  HTTP {job_response.status_code}: {job_response.text[:500]}")
             job_response.raise_for_status()
             resp_data = job_response.json()
             job_id = resp_data["data"]["jobId"]
