@@ -679,7 +679,7 @@ def mineru_ocr(config: dict[str, Any], file_path: str) -> tuple[list[str], list[
 
 # ===================== 异步任务结果统一处理 =====================
 
-def save_async_results(all_texts: list[str], all_json_data: list[dict[str, Any]], config: dict[str, Any], pdf_path: str, content_format: str) -> None:
+def save_async_results(all_texts: list[str], all_json_data: list[dict[str, Any]], config: dict[str, Any], pdf_path: str, content_format: str, skip: list[str] | None = None) -> None:
     """异步任务结果统一处理：JSON保存 + raw保存 + 后处理"""
     model_key = config["model_key"]
     basename = os.path.splitext(pdf_path)[0]
@@ -712,7 +712,7 @@ def save_async_results(all_texts: list[str], all_json_data: list[dict[str, Any]]
     # --- 后处理 ---
     print("\n🔧 后处理...")
     full_text = "\n\n".join(all_texts)
-    full_text = postprocess.process(full_text)
+    full_text = postprocess.process(full_text, skip=skip)
 
     out = f"{basename}_{model_key}.txt"
     with open(out, "w", encoding="utf-8") as f:
@@ -731,6 +731,14 @@ def parse_model_key() -> str | None:
         if arg == "--model" and i + 1 < len(sys.argv):
             return sys.argv[i + 1]
     return None
+
+
+def parse_skip_args() -> list[str]:
+    """从命令行参数解析 --skip，返回要跳过的模块名列表"""
+    for i, arg in enumerate(sys.argv):
+        if arg == "--skip" and i + 1 < len(sys.argv):
+            return [s.strip() for s in sys.argv[i + 1].split(",")]
+    return []
 
 
 def run_async_ocr(config: dict[str, Any], pdf_path: str) -> tuple[list[str], list[dict[str, Any]]]:
@@ -752,7 +760,7 @@ def run_async_ocr(config: dict[str, Any], pdf_path: str) -> tuple[list[str], lis
         raise ValueError(f"未知异步格式: {content_format}")
 
 
-def run_llm_ocr(config: dict[str, Any], pdf_path: str) -> None:
+def run_llm_ocr(config: dict[str, Any], pdf_path: str, skip: list[str] | None = None) -> None:
     """运行 LLM OCR 模式：PDF转图片 -> 分批OCR -> 保存结果"""
     model_key = config["model_key"]
     batch_size = config.get("batch_size", 1)
@@ -793,7 +801,7 @@ def run_llm_ocr(config: dict[str, Any], pdf_path: str) -> None:
     # 后处理
     print("\n🔧 后处理...")
     full_text = "\n\n".join(all_texts)
-    full_text = postprocess.process(full_text)
+    full_text = postprocess.process(full_text, skip=skip)
 
     out = f"{basename}_{model_key}.txt"
     with open(out, "w", encoding="utf-8") as f:
@@ -814,12 +822,15 @@ def main() -> None:
         sys.exit(1)
 
     config = load_model_config(parse_model_key())
+    skip_args = parse_skip_args()
     content_format = config.get("content_format", "openai")
     is_async = content_format in ("paddleocr_async", "paddleocr_v6", "mineru_async")
 
     # 打印概要信息
     print(f"📄 处理: {pdf_path}")
     print(f"🤖 模型: {config['name']} ({config['model_key']})")
+    if skip_args:
+        print(f"⏭️  跳过处理模块: {', '.join(skip_args)}")
     if not is_async:
         batch_size = config.get("batch_size", 1)
         print(f"⚙️  每批{batch_size}页, DPI={dpi}")
@@ -835,9 +846,9 @@ def main() -> None:
             model_name = config["content_format"]
             print(f"❌ {model_name} 处理失败: {e}")
             sys.exit(1)
-        save_async_results(all_texts, all_json_data, config, pdf_path, content_format)
+        save_async_results(all_texts, all_json_data, config, pdf_path, content_format, skip=skip_args)
     else:
-        run_llm_ocr(config, pdf_path)
+        run_llm_ocr(config, pdf_path, skip=skip_args)
 
 
 if __name__ == "__main__":

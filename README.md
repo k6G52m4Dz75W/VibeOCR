@@ -60,11 +60,16 @@ python VibeOCR3.py document.pdf --model nvidia_kimi
 python VibeOCR3.py document.pdf --model mineru_precision
 python VibeOCR3.py document.pdf --model paddleocr_vl
 
+# 跳过指定后处理模块（默认启用去重，可用 --skip 禁用）
+python VibeOCR3.py document.pdf --skip dedup
+python VibeOCR3.py document.pdf --skip dedup,fullwidth_punct
+
 # 批量处理目录下的所有 PDF/图片
 batch_ocr.bat D:\Documents --model mineru_precision
 
-# 独立后处理（对已有 OCR 结果进行清洗）
+# 独立后处理（对已有 OCR 结果进行清洗，可选 --skip）
 python clean_text.py input.txt output.txt
+python clean_text.py input.txt output.txt --skip dedup
 ```
 
 ## 🎯 模型选择指南
@@ -156,7 +161,7 @@ python VibeOCR3.py /path/to/book.pdf
 | 状态 | 内容 |
 |------|------|
 | ✅ 可用 | 核心 OCR 功能、11 种模型、批处理、后处理 |
-| ✅ 已修复 | 删除 config.py 改用环境变量, 全函数类型注解, 移除模块级全局变量, main() 拆分子函数, .gitignore / requirements.txt, 删 deprecated/, 移除 key 格式校验, PaddleOCR Content-Type, 异步结果公共函数, mineru 临时文件, print 统一 f-string, 清空行 |
+| ✅ 已修复 | 引入 dedup+skip 机制, 删除 config.py 改用环境变量, 全函数类型注解, 移除模块级全局变量, main() 拆分子函数, .gitignore / requirements.txt, 删 deprecated/, 移除 key 格式校验, PaddleOCR Content-Type, 异步结果公共函数, mineru 临时文件, print 统一 f-string, 清空行 |
 | 🔧 待改进 | 见 [SPEC.md](SPEC.md) 第 4 节「代码审查报告」 |
 | 📋 路线图 | 见 [SPEC.md](SPEC.md) 第 5 节「开发路线图」 |
 
