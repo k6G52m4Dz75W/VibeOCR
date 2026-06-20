@@ -104,7 +104,7 @@ reasoning_budget = 16384
 
 # -------------------------------------------
 
-[models.nvidia_qwen3.5]
+[models."nvidia_qwen3.5"]
 name = "NVIDIA NIM / Qwen3.5-397B"
 api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
 model_id = "qwen/qwen3.5-397b-a17b"
@@ -121,10 +121,10 @@ prompt = """
 4. 使用规范的中文全角标点符号。
 """
 
-[models.nvidia_qwen3.5.headers]
+[models."nvidia_qwen3.5".headers]
 Accept = "application/json"
 
-[models.nvidia_qwen3.5.payload_template]
+[models."nvidia_qwen3.5".payload_template]
 max_tokens = 16384
 temperature = 0.6
 top_p = 0.95

@@ -731,28 +731,45 @@ def save_async_results(all_texts: list[str], all_json_data: list[dict[str, Any]]
 
 # ===================== 子流程函数 =====================
 
-def parse_model_key() -> str | None:
-    """从命令行参数解析 --model，返回 model_key"""
-    for i, arg in enumerate(sys.argv):
-        if arg == "--model" and i + 1 < len(sys.argv):
-            return sys.argv[i + 1]
-    return None
+import argparse
 
 
-def parse_config_path() -> str | None:
-    """从命令行参数解析 --config，返回外部 TOML 配置文件路径"""
-    for i, arg in enumerate(sys.argv):
-        if arg == "--config" and i + 1 < len(sys.argv):
-            return sys.argv[i + 1]
-    return None
+def build_parser() -> argparse.ArgumentParser:
+    """构建标准命令行参数解析器"""
+    parser = argparse.ArgumentParser(
+        prog=version.NAME,
+        description=version.version_banner(),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=f"""
+更多信息: {version.URL}
+配置文件格式: models_config.toml (TOML)
+外部配置热插拔: --config my_models.toml
+        """.strip(),
+    )
+    parser.add_argument("pdf", nargs="?", default="document.pdf",
+                        help="PDF 文件路径（默认: %(default)s）")
+    parser.add_argument("-m", "--model", default=None,
+                        help=f"模型名称（默认: {DEFAULT_MODEL}）")
+    parser.add_argument("-s", "--skip", default=None,
+                        help="跳过后处理模块，逗号分隔（如: dedup,fullwidth_punct）")
+    parser.add_argument("-c", "--config", default=None,
+                        help="外部 TOML 配置文件路径（热插拔新模型）")
+    parser.add_argument("-v", "--version", action="store_true",
+                        help="显示版本信息")
+    parser.add_argument("-l", "--list-models", action="store_true",
+                        help="列出所有可用模型并退出")
+    parser.add_argument("--dpi", type=int, default=300,
+                        help="PDF 渲染 DPI（默认: %(default)s）")
+    parser.add_argument("--max-width", type=int, default=1600,
+                        help="图片最大宽度（默认: %(default)s px）")
+    return parser
 
 
-def parse_skip_args() -> list[str]:
-    """从命令行参数解析 --skip，返回要跳过的模块名列表"""
-    for i, arg in enumerate(sys.argv):
-        if arg == "--skip" and i + 1 < len(sys.argv):
-            return [s.strip() for s in sys.argv[i + 1].split(",")]
-    return []
+def parse_skip_args(skip_str: str | None) -> list[str]:
+    """解析 --skip 参数，返回要跳过的模块名列表"""
+    if not skip_str:
+        return []
+    return [s.strip() for s in skip_str.split(",")]
 
 
 def run_async_ocr(config: dict[str, Any], pdf_path: str) -> tuple[list[str], list[dict[str, Any]]]:
@@ -827,37 +844,54 @@ def run_llm_ocr(config: dict[str, Any], pdf_path: str, skip: list[str] | None = 
 
 def main() -> None:
     """主入口：参数解析 -> 模型加载 -> 模式分发 -> 保存结果"""
-    # 处理 --version
-    if "--version" in sys.argv:
+    parser = build_parser()
+
+    # 没有参数时显示 help
+    if len(sys.argv) == 1:
+        parser.print_help()
+        return
+
+    args = parser.parse_args()
+
+    # --version
+    if args.version:
         print(version.version_info())
+        return
+
+    # --list-models
+    if args.list_models:
+        print(f"可用模型（共 {len(CONFIGS)} 个）:\n")
+        for key, cfg in CONFIGS.items():
+            note = f" — {cfg.get('note', '')}" if cfg.get('note') else ""
+            default = " ← 默认" if key == DEFAULT_MODEL else ""
+            print(f"  {key:30s} {cfg['name']}{note}{default}")
         return
 
     print(f"\n🚀 {version.version_banner()}\n")
 
-    pdf_path = sys.argv[1] if len(sys.argv) > 1 else "document.pdf"
-    dpi = 300
-    max_width = 1600
+    pdf_path = args.pdf
+    dpi = args.dpi
+    max_width = args.max_width
 
     if not os.path.exists(pdf_path):
         print(f"❌ 找不到: {pdf_path}")
         sys.exit(1)
 
     # 加载外部配置（热插拔）
-    config_path = parse_config_path()
-    if config_path:
+    if args.config:
         from models_config import load_configs
-        load_configs(config_path)
+        load_configs(args.config)
 
-    config = load_model_config(parse_model_key())
-    skip_args = parse_skip_args()
+    config = load_model_config(args.model)
+    skip_args = parse_skip_args(args.skip)
     content_format = config.get("content_format", "openai")
     is_async = content_format in ("paddleocr_async", "paddleocr_v6", "mineru_async")
 
     # 打印概要信息
     print(f"📄 处理: {pdf_path}")
     print(f"🤖 模型: {config['name']} ({config['model_key']})")
-    if config_path:
-        print(f"📦 外部配置: {config_path}")
+    if args.config:
+        print(f"📦 外部配置: {args.config}")
     if skip_args:
         print(f"⏭️  跳过处理模块: {', '.join(skip_args)}")
     if not is_async:

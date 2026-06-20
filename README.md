@@ -55,6 +55,12 @@ $env:SILICONFLOW_API_KEY="sk-your-key-here"
 # 检查版本
 python VibeOCR.py --version
 
+# 查看帮助
+python VibeOCR.py --help
+
+# 列出所有可用模型
+python VibeOCR.py --list-models
+
 # 使用默认模型（DeepSeek-OCR）处理 PDF
 python VibeOCR.py document.pdf
 
@@ -63,15 +69,12 @@ python VibeOCR.py document.pdf --model nvidia_kimi
 python VibeOCR.py document.pdf --model mineru_precision
 python VibeOCR.py document.pdf --model paddleocr_vl
 
-# 跳过指定后处理模块（默认启用去重，可用 --skip 禁用）
+# 跳过指定后处理模块（默认启用去重，可用 -s 或 --skip 禁用）
 python VibeOCR.py document.pdf --skip dedup
 python VibeOCR.py document.pdf --skip dedup,fullwidth_punct
 
 # 加载外部模型配置（热插拔）
 python VibeOCR.py document.pdf --model my_custom --config my_vendor.toml
-
-# 查看所有可用模型
-python -c "from models_config import CONFIGS; [print(k) for k in CONFIGS]"
 
 # 批量处理目录下的所有 PDF/图片
 batch_ocr.bat D:\Documents --model mineru_precision
