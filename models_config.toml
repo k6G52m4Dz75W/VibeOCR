@@ -1,0 +1,347 @@
+# VibeOCR 模型配置文件
+# 使用 TOML 格式，支持热插拔：通过 --config 加载自定义配置
+#
+# 格式说明：
+#   [models.模型名称]            — 模型配置段
+#   [models.模型名称.headers]     — HTTP 请求头（可选）
+#   [models.模型名称.payload_template] — 请求体模板（可选）
+#   prompt = """..."""           — 多行提示词（可选，异步模型可为空）
+#   note = "..."                 — 备注说明（可选）
+
+[defaults]
+default_model = "siliconflow_deepseek-ocr"
+
+# ============================================================
+# NVIDIA NIM 系列
+# ============================================================
+
+[models.nvidia_kimi]
+name = "NVIDIA NIM / Kimi K2.6"
+api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
+model_id = "moonshotai/kimi-k2.6"
+api_key_env = "NVIDIA_API_KEY"
+batch_size = 5
+timeout = 180
+content_format = "openai"
+prompt = """
+请逐字提取图片中的文本，严禁改写、替换同义词或调整语序。
+要求：
+1. 逐字转录，保持原文每一个字、每一个标点不变
+2. 禁止将"为何"改为"为什么"，禁止将"一定能"改为"一定能够"等任何同义替换
+3. 保持段落结构，识别跨页段落，合并被分页打断的段落
+4. 删除页脚中的页码和风眼文字和图样，以及右下方的请开通会员和XX扫描王的水印图案
+5. 使用规范的中文全角标点符号
+6. 严格忠实于原文，不增加、遗漏、修改任何文字
+"""
+
+[models.nvidia_kimi.headers]
+Accept = "application/json"
+
+[models.nvidia_kimi.payload_template]
+max_tokens = 16384
+temperature = 0.1
+top_p = 1.0
+stream = false
+chat_template_kwargs = { thinking = false }
+
+# -------------------------------------------
+
+[models.nvidia_step]
+name = "NVIDIA NIM / step-3.7-flash"
+api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
+model_id = "stepfun-ai/step-3.7-flash"
+api_key_env = "NVIDIA_API_KEY"
+batch_size = 5
+timeout = 180
+content_format = "openai"
+prompt = """
+这是一部小说的扫描文件，请提取正文。
+要求：
+1. 保持段落结构，识别跨页段落，合并被分页打断的段落
+2. 删除页脚中的页码和风眼文字和图样，以及右下方的请开通会员和XX扫描王的水印图案。
+3. 请直接输出纯文本，严格忠实于原文，不增加，遗漏，修改原文文本。
+4. 使用规范的中文全角标点符号。
+"""
+
+[models.nvidia_step.headers]
+Accept = "application/json"
+
+[models.nvidia_step.payload_template]
+max_tokens = 16384
+temperature = 0.1
+top_p = 0.95
+stream = true
+
+# -------------------------------------------
+
+[models.nvidia_nemotron]
+name = "NVIDIA NIM / Nemotron-3-Nano"
+api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
+model_id = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+api_key_env = "NVIDIA_API_KEY"
+batch_size = 5
+timeout = 180
+content_format = "openai"
+prompt = """
+这是一部小说的扫描文件，请提取正文。
+要求：
+1. 保持段落结构，识别跨页段落，合并被分页打断的段落
+2. 删除页脚中的页码和风眼文字和图样，以及右下方的请开通会员和XX扫描王的水印图案。
+3. 请直接输出纯文本，严格忠实于原文，不增加，遗漏，修改原文文本。
+4. 使用规范的中文全角标点符号。
+"""
+
+[models.nvidia_nemotron.headers]
+Accept = "application/json"
+
+[models.nvidia_nemotron.payload_template]
+max_tokens = 65536
+temperature = 0.1
+top_p = 0.95
+stream = true
+chat_template_kwargs = { enable_thinking = false }
+reasoning_budget = 16384
+
+# -------------------------------------------
+
+[models.nvidia_qwen3.5]
+name = "NVIDIA NIM / Qwen3.5-397B"
+api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
+model_id = "qwen/qwen3.5-397b-a17b"
+api_key_env = "NVIDIA_API_KEY"
+batch_size = 5
+timeout = 180
+content_format = "openai"
+prompt = """
+这是一部小说的扫描文件，请提取正文。
+要求：
+1. 保持段落结构，识别跨页段落，合并被分页打断的段落
+2. 删除页脚中的页码和风眼文字和图样，以及右下方的请开通会员和XX扫描王的水印图案。
+3. 请直接输出纯文本，严格忠实于原文，不增加，遗漏，修改原文文本。
+4. 使用规范的中文全角标点符号。
+"""
+
+[models.nvidia_qwen3.5.headers]
+Accept = "application/json"
+
+[models.nvidia_qwen3.5.payload_template]
+max_tokens = 16384
+temperature = 0.6
+top_p = 0.95
+stream = true
+chat_template_kwargs = { enable_thinking = false }
+
+# ============================================================
+# SiliconFlow
+# ============================================================
+
+[models.siliconflow_deepseek-ocr]
+name = "SiliconFlow / DeepSeek-OCR"
+api_url = "https://api.siliconflow.cn/v1/chat/completions"
+model_id = "deepseek-ai/DeepSeek-OCR"
+api_key_env = "SILICONFLOW_API_KEY"
+batch_size = 1
+timeout = 120
+content_format = "openai"
+note = "总上下文限制8K，max_tokens建议不超过4096"
+prompt = """
+<tr>
+<|grounding|>Convert the document to markdown.
+"""
+
+[models.siliconflow_deepseek-ocr.headers]
+Accept = "application/json"
+Content-Type = "application/json"
+
+[models.siliconflow_deepseek-ocr.payload_template]
+max_tokens = 4096
+temperature = 0.2
+top_p = 1.0
+stream = true
+
+# ============================================================
+# OpenAI
+# ============================================================
+
+[models.openai_gpt4o]
+name = "OpenAI / GPT-4o"
+api_url = "https://api.openai.com/v1/chat/completions"
+model_id = "gpt-4o"
+api_key_env = "OPENAI_API_KEY"
+batch_size = 2
+timeout = 180
+content_format = "openai"
+prompt = """
+Extract the main text from this scanned novel page.
+Requirements:
+1. Maintain paragraph structure, merge paragraphs broken across pages
+2. Remove page numbers, watermarks, and advertisements
+3. Output plain text only, strictly faithful to the original
+4. Use standard Chinese full-width punctuation
+"""
+
+[models.openai_gpt4o.headers]
+Accept = "application/json"
+
+[models.openai_gpt4o.payload_template]
+max_tokens = 4096
+temperature = 0.2
+top_p = 1.0
+stream = false
+
+# ============================================================
+# Anthropic
+# ============================================================
+
+[models.anthropic_claude]
+name = "Anthropic / Claude 3.5 Sonnet"
+api_url = "https://api.anthropic.com/v1/messages"
+model_id = "claude-3-5-sonnet-20241022"
+api_key_env = "ANTHROPIC_API_KEY"
+batch_size = 2
+timeout = 180
+content_format = "anthropic"
+prompt = """
+请提取这部扫描小说的正文内容。
+要求：
+1. 保持段落结构，合并被分页打断的段落
+2. 删除页脚页码、水印文字和广告图案
+3. 直接输出纯文本，忠实原文不做修改
+4. 使用中文全角标点符号
+5. 如遇模糊文字，结合上下文推断
+"""
+
+[models.anthropic_claude.headers]
+Accept = "application/json"
+anthropic-version = "2023-06-01"
+
+[models.anthropic_claude.payload_template]
+max_tokens = 4096
+temperature = 0.2
+
+# ============================================================
+# Moonshot AI
+# ============================================================
+
+[models.moonshot_kimi]
+name = "Moonshot AI / Kimi K2.6"
+api_url = "https://api.moonshot.cn/v1/chat/completions"
+model_id = "kimi-k2-6"
+api_key_env = "MOONSHOT_API_KEY"
+batch_size = 5
+timeout = 180
+content_format = "openai"
+prompt = """
+这是一部小说的扫描文件，请提取正文。
+要求：
+1. 保持段落结构，识别跨页段落，合并被分页打断的段落
+2. 删除页脚中的页码和风眼文字和图样，以及右下方的请开通会员和XX扫描王的水印图案。
+3. 请直接输出纯文本，严格忠实于原文，不增加，遗漏，修改原文文本。
+4. 使用规范的中文全角标点符号。
+"""
+
+[models.moonshot_kimi.headers]
+Accept = "application/json"
+
+[models.moonshot_kimi.payload_template]
+max_tokens = 16384
+temperature = 0.2
+top_p = 1.0
+stream = false
+
+# ============================================================
+# PaddleOCR 系列（异步任务，无需 prompt）
+# ============================================================
+
+[models.paddleocr_vl]
+name = "PaddleOCR-VL-1.6 (AIStudio 异步API)"
+api_url = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
+model_id = "PaddleOCR-VL-1.6"
+api_key_env = "PADDLEOCR_API_KEY"
+batch_size = 1
+timeout = 30
+content_format = "paddleocr_async"
+note = "异步任务模式：提交PDF后轮询获取结果，结果返回markdown格式。支持PDF直接上传，无需预先转图片。"
+
+[models.paddleocr_vl.headers]
+Accept = "application/json"
+
+[models.paddleocr_vl.payload_template]
+useDocOrientationClassify = false
+useDocUnwarping = false
+useChartRecognition = false
+useLayoutDetection = true
+prettifyMarkdown = false
+visualize = false
+
+# -------------------------------------------
+
+[models.paddleocr_v6]
+name = "PP-OCRv6 (AIStudio 异步API)"
+api_url = "https://paddleocr.aistudio-app.com/api/v2/ocr/jobs"
+model_id = "PP-OCRv6"
+api_key_env = "PADDLEOCR_API_KEY"
+batch_size = 1
+timeout = 30
+content_format = "paddleocr_v6"
+note = "异步任务模式：提交PDF后轮询获取结果，结果返回ocrResults结构（含识别文本和区域图片URL）。"
+
+[models.paddleocr_v6.headers]
+Accept = "application/json"
+
+[models.paddleocr_v6.payload_template]
+useDocOrientationClassify = false
+useDocUnwarping = false
+useTextlineOrientation = false
+
+# ============================================================
+# MinerU（异步任务，无需 prompt）
+# ============================================================
+
+[models.mineru_precision]
+name = "MinerU Precision Extract API (v4)"
+api_url = "https://mineru.net/api/v4"
+model_id = "vlm"
+api_key_env = "MINERU_API_KEY"
+batch_size = 1
+timeout = 30
+content_format = "mineru_async"
+note = "MinerU 高精度提取API。支持200MB/200页。流程：申请上传URL -> PUT上传文件 -> 轮询batch结果 -> 下载zip提取full.md。扫描件请务必开启is_ocr。"
+
+[models.mineru_precision.headers]
+Accept = "application/json"
+Content-Type = "application/json"
+
+[models.mineru_precision.payload_template]
+model_version = "vlm"
+is_ocr = true
+enable_formula = true
+enable_table = true
+language = "ch"
+extra_formats = []
+
+# ============================================================
+# 自定义模板（供用户复制使用）
+# ============================================================
+
+[models.custom]
+name = "自定义API"
+api_url = "https://your-api-endpoint.com/v1/chat/completions"
+model_id = "your-model-name"
+api_key_env = "CUSTOM_API_KEY"
+batch_size = 1
+timeout = 180
+content_format = "openai"
+prompt = """
+请从扫描图片中提取文本内容。
+要求：保持原文结构，删除页码水印，使用规范标点。
+"""
+
+[models.custom.headers]
+Accept = "application/json"
+
+[models.custom.payload_template]
+max_tokens = 4096
+temperature = 0.2
+top_p = 1.0
+stream = false

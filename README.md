@@ -64,6 +64,12 @@ python VibeOCR3.py document.pdf --model paddleocr_vl
 python VibeOCR3.py document.pdf --skip dedup
 python VibeOCR3.py document.pdf --skip dedup,fullwidth_punct
 
+# 加载外部模型配置（热插拔）
+python VibeOCR3.py document.pdf --model my_custom --config my_vendor.toml
+
+# 查看所有可用模型
+python -c "from models_config import CONFIGS; [print(k) for k in CONFIGS]"
+
 # 批量处理目录下的所有 PDF/图片
 batch_ocr.bat D:\Documents --model mineru_precision
 
@@ -106,7 +112,8 @@ VibeOCR/
 ├── config-sample.py      # API Key 配置参考模板（无实际密钥，附申请链接）
 ├── .gitignore            # Git 忽略规则
 ├── requirements.txt      # Python 依赖清单（pip install -r requirements.txt）
-├── models_config.py      # 模型配置字典（10+ 模型）
+├── models_config.py      # 模型配置加载器（从 TOML 读取）
+├── models_config.toml    # 模型配置（TOML，12 个内置模型，支持热插拔）
 ├── postprocess.py        # 后处理流水线入口
 ├── module_cleaning.py    # 文本清理（标签/空行/空白）
 ├── module_punctuation.py # 英文标点 → 中文全角
@@ -159,8 +166,8 @@ python VibeOCR3.py /path/to/book.pdf
 
 | 状态 | 内容 |
 |------|------|
-| ✅ 可用 | 核心 OCR 功能、11 种模型、批处理、后处理 |
-| ✅ 已修复 | 66 个单元测试, 引入 dedup+skip 机制, 删除 config.py 改用环境变量, 全函数类型注解, 移除模块级全局变量, main() 拆分子函数, .gitignore / requirements.txt, 删 deprecated/, 移除 key 格式校验, PaddleOCR Content-Type, 异步结果公共函数, mineru 临时文件, print 统一 f-string, 清空行 |
+| ✅ 可用 | 核心 OCR 功能、12 种模型（TOML 配置热插拔）、批处理、后处理 |
+| ✅ 已修复 | TOML 配置分离 + 热插拔, 66 个单元测试, 引入 dedup+skip 机制, 删除 config.py 改用环境变量, 全函数类型注解, 移除模块级全局变量, main() 拆分子函数, .gitignore / requirements.txt, 删 deprecated/, 移除 key 格式校验, PaddleOCR Content-Type, 异步结果公共函数, mineru 临时文件, print 统一 f-string, 清空行 |
 | 🔧 待改进 | 见 [SPEC.md](SPEC.md) 第 4 节「代码审查报告」 |
 | 📋 路线图 | 见 [SPEC.md](SPEC.md) 第 5 节「开发路线图」 |
 

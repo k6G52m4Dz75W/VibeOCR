@@ -733,6 +733,14 @@ def parse_model_key() -> str | None:
     return None
 
 
+def parse_config_path() -> str | None:
+    """从命令行参数解析 --config，返回外部 TOML 配置文件路径"""
+    for i, arg in enumerate(sys.argv):
+        if arg == "--config" and i + 1 < len(sys.argv):
+            return sys.argv[i + 1]
+    return None
+
+
 def parse_skip_args() -> list[str]:
     """从命令行参数解析 --skip，返回要跳过的模块名列表"""
     for i, arg in enumerate(sys.argv):
@@ -821,6 +829,12 @@ def main() -> None:
         print(f"❌ 找不到: {pdf_path}")
         sys.exit(1)
 
+    # 加载外部配置（热插拔）
+    config_path = parse_config_path()
+    if config_path:
+        from models_config import load_configs
+        load_configs(config_path)
+
     config = load_model_config(parse_model_key())
     skip_args = parse_skip_args()
     content_format = config.get("content_format", "openai")
@@ -829,6 +843,8 @@ def main() -> None:
     # 打印概要信息
     print(f"📄 处理: {pdf_path}")
     print(f"🤖 模型: {config['name']} ({config['model_key']})")
+    if config_path:
+        print(f"📦 外部配置: {config_path}")
     if skip_args:
         print(f"⏭️  跳过处理模块: {', '.join(skip_args)}")
     if not is_async:
