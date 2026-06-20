@@ -76,6 +76,11 @@ python VibeOCR.py document.pdf --skip dedup,fullwidth_punct
 # 加载外部模型配置（热插拔）
 python VibeOCR.py document.pdf --model my_custom --config my_vendor.toml
 
+# 交互式帮助
+python VibeOCR.py --help
+python utils_clean_text.py -h
+python utils_extract_meta.py -h
+
 # 批量处理目录下的所有 PDF/图片
 batch_ocr.bat D:\Documents --model mineru_precision
 
@@ -83,10 +88,16 @@ batch_ocr.bat D:\Documents --model mineru_precision
 python utils_clean_text.py input.txt output.txt
 python utils_clean_text.py input.txt output.txt -s dedup
 
+# EPUB 元数据提取（从版权页自动提取书名/作者/ISBN 等）
+python utils_extract_meta.py book.pdf
+python utils_extract_meta.py book.pdf --model nvidia_kimi --output meta.yaml
+python utils_extract_meta.py book.pdf --dry-run --debug
+
 # 查看独立工具版本
 python utils_clean_text.py --version
 python utils_insert_pagebreak.py -v
 python utils_map_p_br.py --version
+python utils_extract_meta.py -v
 ```
 
 ## 🎯 模型选择指南
@@ -179,7 +190,7 @@ python VibeOCR.py /path/to/book.pdf
 
 | 状态 | 内容 |
 |------|------|
-| ✅ 可用 | 核心 OCR 功能、12 种模型（TOML 配置热插拔）、批处理、后处理 |
+| ✅ 可用 | 核心 OCR 功能、12 种模型（TOML 配置热插拔）、批处理、后处理、EPUB 元数据提取 |
 | ✅ 已修复 | TOML 配置分离 + 热插拔, 66 个单元测试, 引入 dedup+skip 机制, 删除 config.py 改用环境变量, 全函数类型注解, 移除模块级全局变量, main() 拆分子函数, .gitignore / requirements.txt, 删 deprecated/, 移除 key 格式校验, PaddleOCR Content-Type, 异步结果公共函数, mineru 临时文件, print 统一 f-string, 清空行 |
 | 🔧 待改进 | 见 [SPEC.md](SPEC.md) 第 4 节「代码审查报告」 |
 | 📋 路线图 | 见 [SPEC.md](SPEC.md) 第 5 节「开发路线图」 |
