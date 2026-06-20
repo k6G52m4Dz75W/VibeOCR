@@ -172,7 +172,7 @@ class TestFullPostprocessPipeline:
 class TestDeepseekOCRFullFlow:
     """模拟 LLM OCR 全流程：PDF 编码 → API 调用 → 后处理保存"""
 
-    @patch("VibeOCR.pdf_pages_to_b64")
+    @patch("llm_ocr.pdf_pages_to_b64")
     def test_single_page_flow(self, mock_pdf2b64):
         """1 页 PDF → 接收 API 响应 → 后处理"""
         mock_pdf2b64.return_value = (
@@ -189,13 +189,13 @@ class TestDeepseekOCRFullFlow:
             "choices": [{"message": {"content": "这是OCR提取的文本内容。"}}]
         }
 
-        with patch("VibeOCR.OPENAI_AVAILABLE", False), patch("VibeOCR.requests.post", return_value=mock_response):
+        with patch("llm_ocr.OPENAI_AVAILABLE", False), patch("requests.post", return_value=mock_response):
             result = ocr_batch(SAMPLE_CONFIG_LLM, [SAMPLE_IMAGE_DICT], "第1-1页 (共1页)")
 
         assert "OCR提取" in result
         assert "文本内容" in result
 
-    @patch("VibeOCR.pdf_pages_to_b64")
+    @patch("llm_ocr.pdf_pages_to_b64")
     def test_multi_page_flow_with_postprocess(self, mock_pdf2b64):
         """多页 PDF → 分批 OCR → 合并 → 后处理"""
         mock_pdf2b64.return_value = (
@@ -222,7 +222,7 @@ class TestDeepseekOCRFullFlow:
             return mock_resp
         api_response_side_effect.call_count = 0
 
-        with patch("VibeOCR.OPENAI_AVAILABLE", False), patch("VibeOCR.requests.post", side_effect=api_response_side_effect):
+        with patch("llm_ocr.OPENAI_AVAILABLE", False), patch("requests.post", side_effect=api_response_side_effect):
             text1 = ocr_batch(SAMPLE_CONFIG_LLM, [SAMPLE_IMAGE_DICT], "批次1")
             text2 = ocr_batch(SAMPLE_CONFIG_LLM, [SAMPLE_IMAGE_DICT], "批次2")
 
@@ -233,7 +233,7 @@ class TestDeepseekOCRFullFlow:
         assert "第一页的文本内容" in result
         assert "第二页的文本内容" in result
 
-    @patch("VibeOCR.pdf_pages_to_b64")
+    @patch("llm_ocr.pdf_pages_to_b64")
     def test_streaming_response(self, mock_pdf2b64):
         """模拟 stream=True 的 API 响应"""
         mock_pdf2b64.return_value = ([SAMPLE_IMAGE_DICT], 1)
@@ -253,13 +253,13 @@ class TestDeepseekOCRFullFlow:
         from VibeOCR import ocr_batch
         config_stream = {**SAMPLE_CONFIG_LLM, "payload_template": {**SAMPLE_CONFIG_LLM["payload_template"], "stream": True}}
 
-        with patch("VibeOCR.OpenAI") as mock_openai:
+        with patch("llm_ocr.OpenAI") as mock_openai:
             mock_client = MagicMock()
             mock_openai.return_value = mock_client
             mock_client.chat.completions.create.return_value = mock_response.__iter__.return_value
 
             # 设置 OPENAI_AVAILABLE = True
-            with patch("VibeOCR.OPENAI_AVAILABLE", True):
+            with patch("llm_ocr.OPENAI_AVAILABLE", True):
                 result = ocr_batch(config_stream, [SAMPLE_IMAGE_DICT], "流式测试")
 
         assert "流式响应文本" in result
@@ -284,7 +284,7 @@ class TestMinerUAsyncFlow:
 
         from VibeOCR import mineru_download_and_extract
 
-        with patch("VibeOCR.requests.get", return_value=mock_response):
+        with patch("requests.get", return_value=mock_response):
             content, json_result = mineru_download_and_extract("https://test.zip")
 
         assert "测试文档" in content
@@ -301,7 +301,7 @@ class TestMinerUAsyncFlow:
 
         from VibeOCR import mineru_download_and_extract
 
-        with patch("VibeOCR.requests.get", return_value=mock_response):
+        with patch("requests.get", return_value=mock_response):
             content, json_result = mineru_download_and_extract("https://test.zip")
 
         assert "仅文本内容" in content
@@ -342,9 +342,9 @@ class TestMinerUAsyncFlow:
         mock_resp_zip.content = zip_bytes
 
         with (
-            patch("VibeOCR.requests.post", return_value=mock_resp_upload) as mock_post,
-            patch("VibeOCR.requests.put", return_value=mock_resp_put) as mock_put,
-            patch("VibeOCR.requests.get", return_value=mock_resp_zip) as mock_get,
+            patch("requests.post", return_value=mock_resp_upload) as mock_post,
+            patch("requests.put", return_value=mock_resp_put) as mock_put,
+            patch("requests.get", return_value=mock_resp_zip) as mock_get,
         ):
             # 此时 mineru_poll_batch 会发 GET 请求，让它走轮询路径
             # 由于 mock_get 始终返回 mock_resp_zip，poll 会陷入死循环
@@ -394,9 +394,9 @@ class TestMinerUAsyncFlow:
 
         try:
             with (
-                patch("VibeOCR.requests.post", side_effect=post_side_effect),
-                patch("VibeOCR.requests.put", return_value=MagicMock(status_code=200)),
-                patch("VibeOCR.requests.get", side_effect=get_side_effect),
+                patch("requests.post", side_effect=post_side_effect),
+                patch("requests.put", return_value=MagicMock(status_code=200)),
+                patch("requests.get", side_effect=get_side_effect),
             ):
                 texts, json_data = mineru_ocr(SAMPLE_CONFIG_MNERU, tmp_path)
         finally:
@@ -436,7 +436,7 @@ class TestPaddleOCRVlAsyncFlow:
         mock_resp.status_code = 200
         mock_resp.text = jsonl_lines
 
-        with patch("VibeOCR.requests.get", return_value=mock_resp):
+        with patch("requests.get", return_value=mock_resp):
             texts, json_data = paddleocr_fetch_results("https://test.jsonl")
 
         assert len(texts) == 3
@@ -484,8 +484,8 @@ class TestPaddleOCRVlAsyncFlow:
             return mock_jsonl
 
         with (
-            patch("VibeOCR.requests.post", return_value=mock_submit),
-            patch("VibeOCR.requests.get", side_effect=mock_get),
+            patch("requests.post", return_value=mock_submit),
+            patch("requests.get", side_effect=mock_get),
         ):
             texts, json_data = run_paddleocr_async(SAMPLE_CONFIG_PADDLE, "https://example.com/test.pdf")
 
@@ -538,7 +538,7 @@ class TestPaddleOCRV6AsyncFlow:
         mock_resp.status_code = 200
         mock_resp.text = jsonl_lines
 
-        with patch("VibeOCR.requests.get", return_value=mock_resp):
+        with patch("requests.get", return_value=mock_resp):
             texts, json_data = paddleocr_v6_fetch_results("https://test.jsonl")
 
         assert len(texts) == 3
@@ -583,8 +583,8 @@ class TestPaddleOCRV6AsyncFlow:
             return mock_jsonl
 
         with (
-            patch("VibeOCR.requests.post", return_value=mock_submit),
-            patch("VibeOCR.requests.get", side_effect=mock_get),
+            patch("requests.post", return_value=mock_submit),
+            patch("requests.get", side_effect=mock_get),
         ):
             texts, json_data = run_paddleocr_async(SAMPLE_CONFIG_PADDLE_V6, "https://example.com/test.pdf")
 

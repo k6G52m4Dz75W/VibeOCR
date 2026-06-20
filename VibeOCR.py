@@ -1,20 +1,11 @@
-import requests
-import base64
 import sys
 import os
 import time
 import json
 import zipfile
 import tempfile
+import requests
 from typing import Any
-
-try:
-    import fitz
-    from PIL import Image
-    from io import BytesIO
-except ImportError:
-    print("pip install pymupdf pillow")
-    sys.exit(1)
 
 try:
     import version
@@ -29,216 +20,17 @@ except ImportError:
     sys.exit(1)
 
 try:
-    from openai import OpenAI
-    OPENAI_AVAILABLE: bool = True
+    from llm_ocr import (
+        load_model_config,
+        pdf_pages_to_b64,
+        build_payload,
+        build_headers,
+        ocr_batch,
+        OPENAI_AVAILABLE,
+    )
 except ImportError:
-    OPENAI_AVAILABLE = False
-
-try:
-    from models_config import CONFIGS, DEFAULT_MODEL
-except ImportError:
-    print("请将 models_config.py 放在同一目录下")
+    print("请将 llm_ocr.py 放在同一目录下")
     sys.exit(1)
-
-try:
-    import config as config_module
-except ImportError:
-    config_module = None
-
-
-def load_model_config(model_key: str | None = None) -> dict[str, Any]:
-    """加载模型配置，支持从参数、环境变量或 config.py 读取"""
-    if model_key is None:
-        model_key = os.environ.get("OCR_MODEL", DEFAULT_MODEL)
-
-    if model_key not in CONFIGS:
-        print(f"❌ 未知模型配置: {model_key}")
-        print(f"可用配置: {', '.join(CONFIGS.keys())}")
-        sys.exit(1)
-
-    config = CONFIGS[model_key].copy()
-
-    api_key_env = config["api_key_env"]
-    api_key = os.environ.get(api_key_env)
-
-    if not api_key and config_module:
-        api_key = getattr(config_module, api_key_env, None)
-
-    if not api_key:
-        print(f"⚠️  警告: API Key 未配置")
-        print(f"   环境变量: export {api_key_env}=your_key")
-        if config_module:
-            print(f"   或修改 config.py 中的 {api_key_env}")
-        sys.exit(1)
-
-    config["api_key"] = api_key
-    config["model_key"] = model_key
-
-    return config
-
-
-def build_payload(config: dict[str, Any], content: list[dict[str, Any]], batch_info: str) -> dict[str, Any]:
-    """根据供应商格式构建请求体"""
-    prompt = config.get("prompt", "请提取图片中的文本内容。")
-    model_id = config["model_id"]
-    template = config["payload_template"].copy()
-    fmt = config["content_format"]
-
-    if fmt == "anthropic":
-        payload = {
-            "model": model_id,
-            "messages": [{"role": "user", "content": content}],
-            **template
-        }
-    else:
-        messages = [{"role": "user", "content": content}]
-        payload = {
-            "model": model_id,
-            "messages": messages,
-            **template
-        }
-
-    return payload
-
-
-def build_headers(config: dict[str, Any]) -> dict[str, str]:
-    """构建请求头"""
-    headers = config["headers"].copy()
-    headers["Authorization"] = f"Bearer {config['api_key']}"
-    return headers
-
-
-def pdf_pages_to_b64(pdf_path: str, dpi: int = 300, max_width: int = 1600) -> tuple[list[dict[str, Any]], int]:
-    doc = fitz.open(pdf_path)
-    total = len(doc)
-    images = []
-
-    for i in range(total):
-        page = doc[i]
-        pix = page.get_pixmap(matrix=fitz.Matrix(dpi/72, dpi/72))
-        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-
-        if img.width > max_width:
-            ratio = max_width / img.width
-            new_height = int(img.height * ratio)
-            img = img.resize((max_width, new_height), Image.LANCZOS)
-
-        buf = BytesIO()
-        img.save(buf, format="PNG", optimize=True)
-        b64 = base64.b64encode(buf.getvalue()).decode()
-
-        images.append({
-            "type": "image_url",
-            "image_url": {"url": "data:image/png;base64," + b64}
-        })
-        size_kb = len(buf.getvalue()) / 1024
-        print(f"  第{i+1}/{total}页已编码 ({int(size_kb)}KB)")
-
-    doc.close()
-    return images, total
-
-
-def ocr_batch(config: dict[str, Any], images: list[dict[str, Any]], batch_info: str, max_retries: int = 3, retry_delay: int = 5) -> str:
-    """发送一批图片OCR请求，支持失败重试，支持 stream 和非 stream 模式
-    优先使用 openai 库（如果可用且配置了 base_url），否则使用 requests"""
-    prompt = config.get("prompt", "请提取图片中的文本内容。")
-    content = [{"type": "text", "text": prompt + "\n\n【当前批次: " + batch_info + "】"}]
-    content.extend(images)
-
-    total_size = sum(len(img["image_url"]["url"]) for img in images)
-    print(f"  总base64大小: {int(total_size/1024)}KB")
-
-    payload = build_payload(config, content, batch_info)
-    use_stream = payload.get("stream", False)
-
-    # 判断是否可以使用 openai 库（需要 base_url 支持 OpenAI 兼容格式）
-    api_url = config["api_url"]
-    base_url = api_url.replace('/chat/completions', '')
-    can_use_openai = OPENAI_AVAILABLE and config.get("content_format") == "openai"
-
-    last_error = None
-    for attempt in range(1, max_retries + 1):
-        if can_use_openai:
-            print(f"  发送请求 [openai库] (尝试 {attempt}/{max_retries}, stream={use_stream})...", end=" ")
-        else:
-            print(f"  发送请求 [requests] (尝试 {attempt}/{max_retries}, stream={use_stream})...", end=" ")
-        try:
-            if can_use_openai:
-                # 使用 openai 库（更稳定，兼容性好）
-                client = OpenAI(
-                    api_key=config["api_key"],
-                    base_url=base_url
-                )
-
-                # 构建消息（图片和文本顺序：图片在前，文本在后，与隔壁AI一致）
-                message_content = []
-                for img in images:
-                    message_content.append(img)
-                message_content.append({"type": "text", "text": prompt + "\n\n【当前批次: " + batch_info + "】"})
-
-                response = client.chat.completions.create(
-                    model=config["model_id"],
-                    messages=[{"role": "user", "content": message_content}],
-                    stream=use_stream,
-                    max_tokens=payload.get("max_tokens", 4096),
-                    temperature=payload.get("temperature", 0.2),
-                    top_p=payload.get("top_p", 1.0)
-                )
-
-                if use_stream:
-                    text = ""
-                    for chunk in response:
-                        if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
-                            text += chunk.choices[0].delta.content
-                    print(f"✅ {len(text)}字符 (openai流式)")
-                else:
-                    text = response.choices[0].message.content
-                    print(f"✅ {len(text)}字符 (openai非流式)")
-            else:
-                # 使用 requests 手动发送（原有逻辑）
-                headers = build_headers(config)
-                timeout = config["timeout"]
-                resp = requests.post(api_url, headers=headers, json=payload, timeout=timeout, stream=use_stream)
-                resp.raise_for_status()
-
-                if use_stream:
-                    text = ""
-                    for line in resp.iter_lines():
-                        if line:
-                            line_str = line.decode('utf-8')
-                            if line_str.startswith('data: '):
-                                data_str = line_str[6:]
-                                if data_str == '[DONE]':
-                                    break
-                                try:
-                                    chunk = json.loads(data_str)
-                                    delta = chunk.get("choices", [{}])[0].get("delta", {})
-                                    if delta.get("content"):
-                                        text += delta["content"]
-                                except json.JSONDecodeError:
-                                    continue
-                    print(f"✅ {len(text)}字符 (requests流式)")
-                else:
-                    data = resp.json()
-                    fmt = config["content_format"]
-                    if fmt == "anthropic":
-                        text = data["content"][0]["text"]
-                    else:
-                        text = data["choices"][0]["message"]["content"]
-                    print(f"✅ {len(text)}字符 (requests非流式)")
-
-            return text
-        except Exception as e:
-            last_error = e
-            print(f"❌ 失败: {e}")
-            if attempt < max_retries:
-                print(f"  ⏳ {retry_delay}秒后重试...")
-                time.sleep(retry_delay)
-                retry_delay *= 2
-            else:
-                print(f"  💥 已达到最大重试次数，放弃")
-
-    raise last_error
 
 
 # ===================== PaddleOCR-VL-1.6 异步任务支持 =====================

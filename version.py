@@ -1,7 +1,7 @@
 # version.py
 # VibeOCR 版本信息
 
-__version__ = "3.9.0"
+__version__ = "4.0.0"
 VERSION = __version__
 
 NAME = "VibeOCR"
