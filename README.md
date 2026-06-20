@@ -24,7 +24,7 @@
 
 ```bash
 # 1. 克隆项目
-git clone https://github.com/your-username/VibeOCR.git
+git clone https://github.com/k6G52m4Dz75W/VibeOCR.git
 cd VibeOCR
 
 # 2. 安装依赖
@@ -111,42 +111,43 @@ book_nvidia_kimi.json       ← 异步模型的结构化 JSON 数据
 
 ```
 VibeOCR/
-├── version.py            # 版本信息（VERSION, version_info()）
-├── VibeOCR.py             # 主程序 — OCR 核心逻辑
-├── config-sample.py      # API Key 配置参考模板（无实际密钥，附申请链接）
-├── .gitignore            # Git 忽略规则
-├── requirements.txt      # Python 依赖清单（pip install -r requirements.txt）
-├── models_config.py      # 模型配置加载器（从 TOML 读取）
-├── models_config.toml    # 模型配置（TOML，12 个内置模型，支持热插拔）
-├── postprocess.py        # 后处理流水线入口
-├── module_cleaning.py    # 文本清理（标签/空行/空白）
-├── module_punctuation.py # 英文标点 → 中文全角
+├── version.py                 # 版本信息（VERSION, version_info()）
+├── VibeOCR.py                 # 主程序 — OCR 核心逻辑
+├── config-sample.py           # API Key 配置参考模板（无实际密钥，附申请链接）
+├── .gitignore                 # Git 忽略规则
+├── requirements.txt           # Python 依赖清单（pip install -r requirements.txt）
+├── models_config.py           # 模型配置加载器（从 TOML 读取）
+├── models_config.toml         # 模型配置（TOML，12 个内置模型，支持热插拔）
+├── postprocess.py             # 后处理流水线入口
+├── module_cleaning.py         # 文本清理（标签/空行/空白）
+├── module_punctuation.py      # 英文标点 → 中文全角
 ├── module_heuristic_merge.py  # 断行段落合并
 ├── module_deduplication.py    # 基于指纹的跨批次去重（独立工具）
-├── utils_clean_text.py   # 独立文本清理 CLI
-├── utils_map_p_br.py     # OCR 段落空白映射工具
+├── utils_clean_text.py        # 独立文本清理 CLI
+├── utils_map_p_br.py          # OCR 段落空白映射工具
 ├── utils_insert_pagebreak.py  # EPUB 标准分页符嵌入工具
-├── batch_ocr.bat         # Windows 批处理脚本
-├── README.md             # 项目介绍
-├── SPEC.md               # 项目开发规划书
-└── LICENSE               # MIT 许可证
+├── batch_ocr.bat              # Windows 批处理脚本
+├── README.md                  # 项目介绍
+├── SPEC.md                    # 项目开发规划书
+└── LICENSE                    # MIT 许可证
 ```
 
 ## 🔧 高级用法
 
 ### 自定义 Prompt
 
-在 `models_config.py` 中修改对应模型的 `prompt` 字段即可：
+编辑 `models_config.toml`，找到对应模型段，修改或添加 `prompt` 字段即可：
 
-```python
-"nvidia_kimi": {
-    ...
-    "prompt": """请逐字提取图片中的文本，严禁改写...
+```toml
+[models.nvidia_kimi]
+# ... 其他配置 ...
+prompt = """
+请逐字提取图片中的文本，严禁改写...
 要求：
 1. 逐字转录，保持原文每一个字、每一个标点不变
 2. 保持段落结构，合并被分页打断的段落
-3. 删除页脚页码和水印图案"""
-}
+3. 删除页脚页码和水印图案
+"""
 ```
 
 ### Docker / 无头服务器

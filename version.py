@@ -5,8 +5,8 @@ __version__ = "3.6.0"
 VERSION = __version__
 
 NAME = "VibeOCR"
-DESCRIPTION = "多模型 OCR 文本提取工具"
-URL = "https://github.com/yicki/VibeOCR"
+DESCRIPTION = "智能端到端书籍 OCR 解决方案 — 多模型 AI 驱动，PDF 到纯文本一键提取 | A Smart End-To-End Book OCR solution powered by AI"
+URL = "https://github.com/k6G52m4Dz75W/VibeOCR"
 
 def version_info() -> str:
     """返回带名称的版本字符串"""
