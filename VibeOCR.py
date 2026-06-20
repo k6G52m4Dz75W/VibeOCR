@@ -17,6 +17,12 @@ except ImportError:
     sys.exit(1)
 
 try:
+    import version
+    __version__ = version.VERSION
+except ImportError:
+    __version__ = "0.0.0"
+
+try:
     import postprocess
 except ImportError:
     print("请将 postprocess.py 放在同一目录下")
@@ -821,6 +827,13 @@ def run_llm_ocr(config: dict[str, Any], pdf_path: str, skip: list[str] | None = 
 
 def main() -> None:
     """主入口：参数解析 -> 模型加载 -> 模式分发 -> 保存结果"""
+    # 处理 --version
+    if "--version" in sys.argv:
+        print(version.version_info())
+        return
+
+    print(f"\n🚀 {version.version_banner()}\n")
+
     pdf_path = sys.argv[1] if len(sys.argv) > 1 else "document.pdf"
     dpi = 300
     max_width = 1600

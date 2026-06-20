@@ -172,7 +172,7 @@ class TestFullPostprocessPipeline:
 class TestDeepseekOCRFullFlow:
     """模拟 LLM OCR 全流程：PDF 编码 → API 调用 → 后处理保存"""
 
-    @patch("VibeOCR3.pdf_pages_to_b64")
+    @patch("VibeOCR.pdf_pages_to_b64")
     def test_single_page_flow(self, mock_pdf2b64):
         """1 页 PDF → 接收 API 响应 → 后处理"""
         mock_pdf2b64.return_value = (
@@ -180,7 +180,7 @@ class TestDeepseekOCRFullFlow:
             1,
         )
 
-        from VibeOCR3 import ocr_batch
+        from VibeOCR import ocr_batch
 
         # 模拟 API 返回
         mock_response = MagicMock()
@@ -189,13 +189,13 @@ class TestDeepseekOCRFullFlow:
             "choices": [{"message": {"content": "这是OCR提取的文本内容。"}}]
         }
 
-        with patch("VibeOCR3.OPENAI_AVAILABLE", False), patch("VibeOCR3.requests.post", return_value=mock_response):
+        with patch("VibeOCR.OPENAI_AVAILABLE", False), patch("VibeOCR.requests.post", return_value=mock_response):
             result = ocr_batch(SAMPLE_CONFIG_LLM, [SAMPLE_IMAGE_DICT], "第1-1页 (共1页)")
 
         assert "OCR提取" in result
         assert "文本内容" in result
 
-    @patch("VibeOCR3.pdf_pages_to_b64")
+    @patch("VibeOCR.pdf_pages_to_b64")
     def test_multi_page_flow_with_postprocess(self, mock_pdf2b64):
         """多页 PDF → 分批 OCR → 合并 → 后处理"""
         mock_pdf2b64.return_value = (
@@ -203,7 +203,7 @@ class TestDeepseekOCRFullFlow:
             2,
         )
 
-        from VibeOCR3 import ocr_batch
+        from VibeOCR import ocr_batch
 
         page_contents = [
             "这是第一页的文本内容需要足够长才能避免短行合并。",
@@ -222,7 +222,7 @@ class TestDeepseekOCRFullFlow:
             return mock_resp
         api_response_side_effect.call_count = 0
 
-        with patch("VibeOCR3.OPENAI_AVAILABLE", False), patch("VibeOCR3.requests.post", side_effect=api_response_side_effect):
+        with patch("VibeOCR.OPENAI_AVAILABLE", False), patch("VibeOCR.requests.post", side_effect=api_response_side_effect):
             text1 = ocr_batch(SAMPLE_CONFIG_LLM, [SAMPLE_IMAGE_DICT], "批次1")
             text2 = ocr_batch(SAMPLE_CONFIG_LLM, [SAMPLE_IMAGE_DICT], "批次2")
 
@@ -233,7 +233,7 @@ class TestDeepseekOCRFullFlow:
         assert "第一页的文本内容" in result
         assert "第二页的文本内容" in result
 
-    @patch("VibeOCR3.pdf_pages_to_b64")
+    @patch("VibeOCR.pdf_pages_to_b64")
     def test_streaming_response(self, mock_pdf2b64):
         """模拟 stream=True 的 API 响应"""
         mock_pdf2b64.return_value = ([SAMPLE_IMAGE_DICT], 1)
@@ -250,16 +250,16 @@ class TestDeepseekOCRFullFlow:
             MockStreamChunk("文本。"),
         ]
 
-        from VibeOCR3 import ocr_batch
+        from VibeOCR import ocr_batch
         config_stream = {**SAMPLE_CONFIG_LLM, "payload_template": {**SAMPLE_CONFIG_LLM["payload_template"], "stream": True}}
 
-        with patch("VibeOCR3.OpenAI") as mock_openai:
+        with patch("VibeOCR.OpenAI") as mock_openai:
             mock_client = MagicMock()
             mock_openai.return_value = mock_client
             mock_client.chat.completions.create.return_value = mock_response.__iter__.return_value
 
             # 设置 OPENAI_AVAILABLE = True
-            with patch("VibeOCR3.OPENAI_AVAILABLE", True):
+            with patch("VibeOCR.OPENAI_AVAILABLE", True):
                 result = ocr_batch(config_stream, [SAMPLE_IMAGE_DICT], "流式测试")
 
         assert "流式响应文本" in result
@@ -282,9 +282,9 @@ class TestMinerUAsyncFlow:
         mock_response.status_code = 200
         mock_response.content = zip_bytes
 
-        from VibeOCR3 import mineru_download_and_extract
+        from VibeOCR import mineru_download_and_extract
 
-        with patch("VibeOCR3.requests.get", return_value=mock_response):
+        with patch("VibeOCR.requests.get", return_value=mock_response):
             content, json_result = mineru_download_and_extract("https://test.zip")
 
         assert "测试文档" in content
@@ -299,9 +299,9 @@ class TestMinerUAsyncFlow:
         mock_response.status_code = 200
         mock_response.content = zip_bytes
 
-        from VibeOCR3 import mineru_download_and_extract
+        from VibeOCR import mineru_download_and_extract
 
-        with patch("VibeOCR3.requests.get", return_value=mock_response):
+        with patch("VibeOCR.requests.get", return_value=mock_response):
             content, json_result = mineru_download_and_extract("https://test.zip")
 
         assert "仅文本内容" in content
@@ -309,7 +309,7 @@ class TestMinerUAsyncFlow:
 
     def test_mineru_full_flow(self):
         """模拟 MinerU 完整流程：申请URL → 上传 → 轮询 → 下载 → 提取 """
-        from VibeOCR3 import mineru_get_upload_url, mineru_upload_file, mineru_poll_batch, mineru_ocr
+        from VibeOCR import mineru_get_upload_url, mineru_upload_file, mineru_poll_batch, mineru_ocr
 
         mock_resp_upload = MagicMock()
         mock_resp_upload.status_code = 200
@@ -342,9 +342,9 @@ class TestMinerUAsyncFlow:
         mock_resp_zip.content = zip_bytes
 
         with (
-            patch("VibeOCR3.requests.post", return_value=mock_resp_upload) as mock_post,
-            patch("VibeOCR3.requests.put", return_value=mock_resp_put) as mock_put,
-            patch("VibeOCR3.requests.get", return_value=mock_resp_zip) as mock_get,
+            patch("VibeOCR.requests.post", return_value=mock_resp_upload) as mock_post,
+            patch("VibeOCR.requests.put", return_value=mock_resp_put) as mock_put,
+            patch("VibeOCR.requests.get", return_value=mock_resp_zip) as mock_get,
         ):
             # 此时 mineru_poll_batch 会发 GET 请求，让它走轮询路径
             # 由于 mock_get 始终返回 mock_resp_zip，poll 会陷入死循环
@@ -358,7 +358,7 @@ class TestMinerUAsyncFlow:
 
     def test_mineru_ocr_function(self):
         """模拟 mineru_ocr 顶层函数"""
-        from VibeOCR3 import mineru_ocr
+        from VibeOCR import mineru_ocr
 
         md_text = "提取的正文内容。"
         zip_bytes = make_mineru_zip(md_text, {"page": 1})
@@ -394,9 +394,9 @@ class TestMinerUAsyncFlow:
 
         try:
             with (
-                patch("VibeOCR3.requests.post", side_effect=post_side_effect),
-                patch("VibeOCR3.requests.put", return_value=MagicMock(status_code=200)),
-                patch("VibeOCR3.requests.get", side_effect=get_side_effect),
+                patch("VibeOCR.requests.post", side_effect=post_side_effect),
+                patch("VibeOCR.requests.put", return_value=MagicMock(status_code=200)),
+                patch("VibeOCR.requests.get", side_effect=get_side_effect),
             ):
                 texts, json_data = mineru_ocr(SAMPLE_CONFIG_MNERU, tmp_path)
         finally:
@@ -413,10 +413,10 @@ class TestMinerUAsyncFlow:
 class TestPaddleOCRVlAsyncFlow:
     """PaddleOCR-VL 异步流程：提交 → 轮询 → jsonl 下载 → 解析 → 保存"""
 
-    @patch("VibeOCR3.paddleocr_poll_job")
+    @patch("VibeOCR.paddleocr_poll_job")
     def test_vl_fetch_results(self, mock_poll):
         """模拟 jsonl 下载 → 解析 PaddleOCR-VL 格式结果"""
-        from VibeOCR3 import paddleocr_fetch_results
+        from VibeOCR import paddleocr_fetch_results
 
         jsonl_lines = make_paddleocr_jsonl([
             {
@@ -436,7 +436,7 @@ class TestPaddleOCRVlAsyncFlow:
         mock_resp.status_code = 200
         mock_resp.text = jsonl_lines
 
-        with patch("VibeOCR3.requests.get", return_value=mock_resp):
+        with patch("VibeOCR.requests.get", return_value=mock_resp):
             texts, json_data = paddleocr_fetch_results("https://test.jsonl")
 
         assert len(texts) == 3
@@ -447,7 +447,7 @@ class TestPaddleOCRVlAsyncFlow:
 
     def test_vl_full_flow(self):
         """模拟 PaddleOCR-VL 完整异步流程"""
-        from VibeOCR3 import run_paddleocr_async
+        from VibeOCR import run_paddleocr_async
 
         jsonl_lines = make_paddleocr_jsonl([
             {"layoutParsingResults": [{"markdown": {"text": "VL提取结果。"}}]},
@@ -484,8 +484,8 @@ class TestPaddleOCRVlAsyncFlow:
             return mock_jsonl
 
         with (
-            patch("VibeOCR3.requests.post", return_value=mock_submit),
-            patch("VibeOCR3.requests.get", side_effect=mock_get),
+            patch("VibeOCR.requests.post", return_value=mock_submit),
+            patch("VibeOCR.requests.get", side_effect=mock_get),
         ):
             texts, json_data = run_paddleocr_async(SAMPLE_CONFIG_PADDLE, "https://example.com/test.pdf")
 
@@ -494,7 +494,7 @@ class TestPaddleOCRVlAsyncFlow:
 
     def test_vl_with_save(self):
         """验证 save_async_results 能正确处理 VL 格式"""
-        from VibeOCR3 import save_async_results
+        from VibeOCR import save_async_results
 
         with tempfile.TemporaryDirectory() as tmpdir:
             pdf_path = os.path.join(tmpdir, "test.pdf")
@@ -515,10 +515,10 @@ class TestPaddleOCRVlAsyncFlow:
 class TestPaddleOCRV6AsyncFlow:
     """PP-OCRv6 异步流程"""
 
-    @patch("VibeOCR3.paddleocr_poll_job")
+    @patch("VibeOCR.paddleocr_poll_job")
     def test_v6_fetch_results(self, mock_poll):
         """模拟 jsonl 下载 → 解析 PP-OCRv6 格式结果"""
-        from VibeOCR3 import paddleocr_v6_fetch_results
+        from VibeOCR import paddleocr_v6_fetch_results
 
         jsonl_lines = make_paddleocr_jsonl([
             {
@@ -538,7 +538,7 @@ class TestPaddleOCRV6AsyncFlow:
         mock_resp.status_code = 200
         mock_resp.text = jsonl_lines
 
-        with patch("VibeOCR3.requests.get", return_value=mock_resp):
+        with patch("VibeOCR.requests.get", return_value=mock_resp):
             texts, json_data = paddleocr_v6_fetch_results("https://test.jsonl")
 
         assert len(texts) == 3
@@ -549,7 +549,7 @@ class TestPaddleOCRV6AsyncFlow:
 
     def test_v6_full_flow(self):
         """模拟 PP-OCRv6 完整异步流程"""
-        from VibeOCR3 import run_paddleocr_async
+        from VibeOCR import run_paddleocr_async
 
         jsonl_lines = make_paddleocr_jsonl([
             {"ocrResults": [{"text": "v6提取文本。"}]},
@@ -583,8 +583,8 @@ class TestPaddleOCRV6AsyncFlow:
             return mock_jsonl
 
         with (
-            patch("VibeOCR3.requests.post", return_value=mock_submit),
-            patch("VibeOCR3.requests.get", side_effect=mock_get),
+            patch("VibeOCR.requests.post", return_value=mock_submit),
+            patch("VibeOCR.requests.get", side_effect=mock_get),
         ):
             texts, json_data = run_paddleocr_async(SAMPLE_CONFIG_PADDLE_V6, "https://example.com/test.pdf")
 
@@ -593,7 +593,7 @@ class TestPaddleOCRV6AsyncFlow:
 
     def test_v6_with_save(self):
         """验证 save_async_results 能正确处理 v6 格式"""
-        from VibeOCR3 import save_async_results
+        from VibeOCR import save_async_results
 
         with tempfile.TemporaryDirectory() as tmpdir:
             pdf_path = os.path.join(tmpdir, "test_v6.pdf")

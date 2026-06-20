@@ -52,20 +52,23 @@ $env:SILICONFLOW_API_KEY="sk-your-key-here"
 ### 使用示例
 
 ```bash
+# 检查版本
+python VibeOCR.py --version
+
 # 使用默认模型（DeepSeek-OCR）处理 PDF
-python VibeOCR3.py document.pdf
+python VibeOCR.py document.pdf
 
 # 使用指定模型
-python VibeOCR3.py document.pdf --model nvidia_kimi
-python VibeOCR3.py document.pdf --model mineru_precision
-python VibeOCR3.py document.pdf --model paddleocr_vl
+python VibeOCR.py document.pdf --model nvidia_kimi
+python VibeOCR.py document.pdf --model mineru_precision
+python VibeOCR.py document.pdf --model paddleocr_vl
 
 # 跳过指定后处理模块（默认启用去重，可用 --skip 禁用）
-python VibeOCR3.py document.pdf --skip dedup
-python VibeOCR3.py document.pdf --skip dedup,fullwidth_punct
+python VibeOCR.py document.pdf --skip dedup
+python VibeOCR.py document.pdf --skip dedup,fullwidth_punct
 
 # 加载外部模型配置（热插拔）
-python VibeOCR3.py document.pdf --model my_custom --config my_vendor.toml
+python VibeOCR.py document.pdf --model my_custom --config my_vendor.toml
 
 # 查看所有可用模型
 python -c "from models_config import CONFIGS; [print(k) for k in CONFIGS]"
@@ -108,7 +111,8 @@ book_nvidia_kimi.json       ← 异步模型的结构化 JSON 数据
 
 ```
 VibeOCR/
-├── VibeOCR3.py           # 主程序 — OCR 核心逻辑
+├── version.py            # 版本信息（VERSION, version_info()）
+├── VibeOCR.py             # 主程序 — OCR 核心逻辑
 ├── config-sample.py      # API Key 配置参考模板（无实际密钥，附申请链接）
 ├── .gitignore            # Git 忽略规则
 ├── requirements.txt      # Python 依赖清单（pip install -r requirements.txt）
@@ -150,7 +154,7 @@ VibeOCR/
 ```bash
 # 设置环境变量后运行
 export OCR_MODEL=mineru_precision
-python VibeOCR3.py /path/to/book.pdf
+python VibeOCR.py /path/to/book.pdf
 ```
 
 ## 🛡️ 安全提醒

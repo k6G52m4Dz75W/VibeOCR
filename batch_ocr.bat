@@ -21,7 +21,7 @@ if "%~2"=="--model" (
 )
 
 echo ==========================================
-echo VibeOCR3 Batch Processing
+echo VibeOCR Batch Processing
 echo Target: %TARGET_DIR%
 echo Model: %MODEL%
 echo ==========================================
@@ -54,7 +54,7 @@ set "CURRENT=0"
 for %%f in ("%TARGET_DIR%\*.pdf" "%TARGET_DIR%\*.jpg" "%TARGET_DIR%\*.jpeg" "%TARGET_DIR%\*.png" "%TARGET_DIR%\*.bmp" "%TARGET_DIR%\*.tiff" "%TARGET_DIR%\*.webp") do (
     set /a CURRENT+=1
     echo [%CURRENT%/%FILE_COUNT%] Processing: %%~nxf
-    python VibeOCR3.py "%%f" --model %MODEL%
+    python VibeOCR.py "%%f" --model %MODEL%
     if errorlevel 1 (
         echo     [WARN] Failed: %%~nxf
     ) else (
