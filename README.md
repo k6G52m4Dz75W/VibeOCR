@@ -79,9 +79,14 @@ python VibeOCR.py document.pdf --model my_custom --config my_vendor.toml
 # 批量处理目录下的所有 PDF/图片
 batch_ocr.bat D:\Documents --model mineru_precision
 
-# 独立后处理（对已有 OCR 结果进行清洗，可选 --skip）
+# 独立后处理（对已有 OCR 结果进行清洗，可选 -s/--skip）
 python utils_clean_text.py input.txt output.txt
-python utils_clean_text.py input.txt output.txt --skip dedup
+python utils_clean_text.py input.txt output.txt -s dedup
+
+# 查看独立工具版本
+python utils_clean_text.py --version
+python utils_insert_pagebreak.py -v
+python utils_map_p_br.py --version
 ```
 
 ## 🎯 模型选择指南

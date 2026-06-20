@@ -7,11 +7,18 @@ OCR空白段落映射工具（修正版 v6 - 完整合并版）
 """
 
 import json
+import sys
 import numpy as np
 import re
 import argparse
 from pathlib import Path
 from difflib import SequenceMatcher
+
+try:
+    import version
+    VERSION = version.VERSION
+except ImportError:
+    VERSION = "0.0.0"
 
 
 def detect_format(data) -> tuple:
@@ -273,12 +280,21 @@ def insert_br_into_llm_text(llm_text: str, br_positions: list) -> tuple:
 
 
 def main():
-    parser = argparse.ArgumentParser(description='OCR空白段落映射工具（修正版v6）')
+    parser = argparse.ArgumentParser(
+        prog="utils_map_p_br",
+        description=f'OCR空白段落映射工具 v{VERSION}'
+    )
     parser.add_argument('ocr_json', help='OCR结果JSON文件路径')
     parser.add_argument('llm_txt', help='大模型提取的文本文件路径')
     parser.add_argument('-o', '--output', help='输出文件路径')
     parser.add_argument('--gap-multiplier', type=float, default=4.0,
                         help='OCR空白检测倍数阈值 (默认: 4.0)')
+    parser.add_argument('-v', '--version', action='store_true',
+                        help='显示版本信息')
+
+    if "--version" in sys.argv or "-v" in sys.argv:
+        print(f"utils_map_p_br v{VERSION}")
+        return
 
     args = parser.parse_args()
 

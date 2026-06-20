@@ -9,9 +9,16 @@
 """
 
 import re
+import sys
 import argparse
 from pathlib import Path
 from difflib import SequenceMatcher
+
+try:
+    import version
+    VERSION = version.VERSION
+except ImportError:
+    VERSION = "0.0.0"
 
 
 # ---------- 锚点与匹配的参数 ----------
@@ -318,7 +325,8 @@ def build_page_divs(br_text: str, pages: list, start_page: int = 1) -> tuple:
 def main():
     global HEAD_ANCHOR_LEN, TAIL_ANCHOR_LEN, FUZZY_THRESHOLD
     parser = argparse.ArgumentParser(
-        description='根据 raw 分页标记，在 br 校对文本中插入 EPUB 规范的分页符 <span>。'
+        prog="utils_insert_pagebreak",
+        description=f'根据 raw 分页标记，在 br 校对文本中插入 EPUB 规范的分页符 <span>。v{VERSION}'
     )
     parser.add_argument('raw_txt', help='带分页标记的 OCR 原始文本')
     parser.add_argument('br_txt', help='校对后的最终文本')
@@ -333,6 +341,12 @@ def main():
     parser.add_argument('--start-page', type=int, default=1,
                         help='起始页码：第一个分页符使用的页码（默认 1）。'
                              '例如 --start-page 23 且共 28 页时，id 为 page23…page50。')
+    parser.add_argument('-v', '--version', action='store_true',
+                        help='显示版本信息')
+
+    if "--version" in sys.argv or "-v" in sys.argv:
+        print(f"utils_insert_pagebreak v{VERSION}")
+        return
 
     args = parser.parse_args()
 
