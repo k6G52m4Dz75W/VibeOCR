@@ -3,7 +3,10 @@
 utils_extract_meta.py — 从 PDF/图片中提取 EPUB 元数据 (meta.yaml)
 
 利用 LLM OCR 管线（llm_ocr 模块），从书籍版权页/封面页提取结构化元数据，
-输出标准的 EPUB meta.yaml 格式。
+直接输出 LLM 返回的标准 YAML 内容。
+
+设计选择：不自行解析 YAML，让 LLM 直接返回完整的 meta.yaml。
+实践证明 LLM 直接输出比自建 YAML 解析器更准确、更完整。
 
 用法:
     python utils_extract_meta.py book.pdf -o meta.yaml
@@ -24,207 +27,79 @@ try:
 except ImportError:
     VERSION = "0.0.0"
 
-import yaml
 
+# ---- 提示词 ----
 
-# ---- 内置 prompt ----
-
-META_PROMPT = """你是一名专业的图书元数据提取专家。请仔细分析图片中的文字（特别是版权页、书名页），提取以下元数据信息。
-
-必须以 YAML 格式输出，仅输出 YAML 内容，不要添加任何额外说明：
-
+META_PROMPT = """从图片提取文字，返回符合电子书 EPUB 规范的 meta.yaml 元数据。根据以下模板和说明直接返回YAML的内容，不要添加任何额外说明：
 ---
-# 基本标识信息
-title:                    # 书名（必须）
-author:                   # 作者（列表）
-publisher:                # 出版社
-publisher_address:        # 出版社地址
-publisher_url:            # 出版社网址
-
-# 出版信息
-date:                     # 出版日期 (YYYY-MM-DD 格式)
-edition:                  # 版次说明（如 "2026年1月第1版"）
-print_run:                # 印刷次数（如 "2026年1月第1次印刷"）
-
-# ISBN
+title: # 书名(若有副标题的话返回如下列表，否则直接返回书名）
+- type: main
+  text: # 书名
+- type: subtitle
+  text: # 副标题
+creator: # 作者（若作者姓名之间包含顿号、则作为不同的作者返回列表）
+- role: author
+  text: # 姓名
 identifier:
-  - scheme: ISBN-13
-    value:                # 13位 ISBN 号
-
-# 制作信息
-producer:                 # 制作公司/排版公司
-format:                   # 开本（如 "880毫米 × 1230毫米 1/32"）
-pages:                    # 总页数
-word_count:               # 字数（如 "250千字"）
-
-# 价格
-price:                    # 定价（如 "49.80元"）
-price_currency: CNY
-
-# 编辑团队
-contributor:              # 列表，每项含 role 和 name
-  - role: 责任编辑
-    name:
-  - role: 特约编辑
-    name:
-
-# 语言
-language: zh-CN
-
-# 备注
-note:                     # 其他需要记录的信息
-
-如果某些信息在图片中无法找到，请留空或使用合适的默认值。
-请仔细从图片中提取每个字段，确保 ISBN、出版日期等关键信息准确无误。
+- scheme: ISBN-13
+  text: # 去除-的13位书号
+publisher: # 出版社
+date: # 出版日期，格式为YYYY-MM-DD，只有年份是必须的
+lang: zh-CN # 根据版权页语言判断书籍语言
+contributor:
+  - role: editor
+    text: # 编辑姓名（若有多位则返回列表）
+  - role: printer 
+    text: # 印制人员姓名（若有多位则返回列表）
+---
 """
 
 
-# ---- YAML 构建器（无需 PyYAML 依赖） ----
+# ---- LLM 响应处理 ----
 
-def _yaml_value(value, indent: int = 0) -> str:
-    """将 Python 值序列化为 YAML 行"""
-    prefix = "  " * indent
-    if value is None:
-        return ""
-    if isinstance(value, bool):
-        return str(value).lower()
-    if isinstance(value, (int, float)):
-        return str(value)
-    if isinstance(value, str):
-        if any(ch in value for ch in (':', '#', '{', '}', '[', ']', ',', '&', '*', '?', '|', '-', '<', '>', '=', '!', '%', '@', '`')):
-            escaped = value.replace('\\', '\\\\').replace('"', '\\"')
-            return f'"{escaped}"'
-        return value
-    if isinstance(value, list):
-        lines = []
-        for item in value:
-            if isinstance(item, dict):
-                lines.append(f"{prefix}-")
-                for k, v in item.items():
-                    if v is not None and v != "":
-                        lines.append(f"{prefix}  {k}: {_yaml_value(v, indent + 1)}")
-            else:
-                lines.append(f"{prefix}- {_yaml_value(item, indent + 1)}")
-        return "\n".join(lines)
-    if isinstance(value, dict):
-        lines = []
-        for k, v in value.items():
-            if v is not None and v != "" and not (isinstance(v, list) and len(v) == 0):
-                lines.append(f"{prefix}{k}: {_yaml_value(v, indent + 1)}")
-        return "\n".join(lines)
-    return str(value)
-
-
-def dict_to_yaml(data: dict) -> str:
-    """将 dict 转换为 YAML 字符串"""
-    return _yaml_value(data).strip()
-
-
-# ---- LLM 响应解析 ----
-
-def _parse_yaml_response(text: str) -> dict:
-    """从 LLM 的 YAML 输出中提取结构化数据"""
-    # 尝试提取 YAML 块（可能在 ```yaml ... ``` 中）
-    yaml_block = text
+def _extract_yaml_block(text: str) -> str:
+    """从 LLM 响应中提取纯净的 YAML 块"""
+    # 尝试提取 ```yaml ... ``` / ``` ... ``` 包裹的块
     match = re.search(r"```(?:yaml)?\s*\n(.*?)\n```", text, re.DOTALL)
     if match:
-        yaml_block = match.group(1)
+        return match.group(1).strip()
 
-    # 去掉开始的 ---
-    yaml_block = re.sub(r"^---\s*\n", "", yaml_block.strip())
+    # 尝试提取以 --- 开头的内容
+    if text.strip().startswith("---"):
+        return text.strip()
 
-    # 用简单的行解析提取键值
-    result = {}
-    current_key = None
-    current_list = []
-    current_dict = {}
-    in_list = False
-    in_dict_in_list = False
+    # 尝试提取包含 title: 的部分
+    idx = text.find("title:")
+    if idx != -1:
+        # 找到 title: 前面的 ---（如果有）
+        before = text[:idx].rfind("---")
+        if before != -1:
+            return text[before:].strip()
+        return text[idx:].strip()
 
-    def _flush_list():
-        nonlocal current_list, current_dict, in_list, in_dict_in_list
-        if in_dict_in_list and current_dict:
-            current_list.append(current_dict)
-            current_dict = {}
-        if in_list and current_key and current_list:
-            result[current_key] = current_list
-        current_list = []
-        in_list = False
-        in_dict_in_list = False
+    # 保底：返回整个文本
+    return text.strip()
 
-    def _set_value(key, value):
-        nonlocal current_key
-        value = value.strip().strip("'\"")
-        if value.lower() in ("none", "null", ""):
-            return
-        if value.lower() == "true":
-            value = True
-        elif value.lower() == "false":
-            value = False
-        try:
-            if "." in value:
-                value = float(value)
-            else:
-                value = int(value)
-        except (ValueError, TypeError):
-            pass
-        result[key] = value
 
-    for line in yaml_block.split("\n"):
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
+def _validate_yaml(yaml_text: str) -> tuple[bool, str]:
+    """对 YAML 做基本校验，返回 (是否合法, 提示信息)"""
+    if not yaml_text:
+        return False, "YAML 内容为空"
 
-        if stripped.startswith("- "):
-            item = stripped[2:].strip()
-            if not in_list:
-                _flush_list()
-                in_list = True
-            if ": " in item and not item.startswith(("'", '"')):
-                if in_dict_in_list and current_dict:
-                    current_list.append(current_dict)
-                    current_dict = {}
-                in_dict_in_list = True
-                k, v = item.split(": ", 1)
-                current_dict[k.strip()] = v.strip().strip("'\"")
-            else:
-                if in_dict_in_list and current_dict:
-                    current_list.append(current_dict)
-                    current_dict = {}
-                    in_dict_in_list = False
-                current_list.append(item.strip().strip("'\""))
-            continue
+    # 必须以 --- 开头
+    if not yaml_text.startswith("---"):
+        # 尝试自动补上
+        yaml_text = "---\n" + yaml_text
 
-        if in_dict_in_list and current_dict:
-            current_list.append(current_dict)
-            current_dict = {}
-            in_dict_in_list = False
+    # 必须包含 title
+    if "title:" not in yaml_text:
+        return False, "YAML 中缺少 title 字段"
 
-        if line.startswith("    ") or line.startswith("  "):
-            if in_dict_in_list and ": " in stripped:
-                k, v = stripped.split(": ", 1)
-                current_dict[k.strip()] = v.strip().strip("'\"")
-            continue
+    # 检查作者/创作者字段
+    if "author:" not in yaml_text and "creator:" not in yaml_text:
+        return True, "⚠️  缺少 author/creator 字段，建议人工补全"
 
-        if ": " in stripped:
-            _flush_list()
-            key, value = stripped.split(": ", 1)
-            key = key.strip()
-            value = value.strip()
-            if value == "" or value == "''" or value == '""':
-                current_key = key
-                current_list = []
-                in_list = False
-            else:
-                _set_value(key, value)
-                current_key = key
-        elif stripped.endswith(":") and not stripped.startswith("-"):
-            _flush_list()
-            current_key = stripped.rstrip(":").strip()
-            result[current_key] = None
-
-    _flush_list()
-    return result
+    return True, ""
 
 
 # ---- 主入口 ----
@@ -259,111 +134,6 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("-v", "--version", action="store_true",
                         help="显示版本信息")
     return parser
-
-
-def _build_output_yaml(meta: dict) -> str:
-    """按 meta.yaml 规范格式构建输出字符串"""
-    lines = ["---"]
-    lines.append(f"# 本文件由 utils_extract_meta v{VERSION} 自动生成")
-    lines.append("# 请人工核对以下信息，修正可能的识别错误")
-    lines.append("")
-
-    # 基本标识
-    if meta.get("title"):
-        lines.append(f"title: {meta['title']}")
-        lines.append("")
-    author = meta.get("author", [])
-    if isinstance(author, str):
-        author = [a.strip() for a in author.replace("、", ",").split(",") if a.strip()]
-    if author:
-        lines.append("author:")
-        for a in author:
-            lines.append(f"  - {a}")
-        lines.append("")
-    if meta.get("publisher"):
-        lines.append(f"publisher: {meta['publisher']}")
-        lines.append("")
-    if meta.get("publisher_address"):
-        lines.append(f"publisher_address: {meta['publisher_address']}")
-        lines.append("")
-    if meta.get("publisher_url"):
-        lines.append(f"publisher_url: {meta['publisher_url']}")
-        lines.append("")
-
-    # 出版信息
-    if meta.get("date"):
-        lines.append(f"date: {meta['date']}")
-        lines.append("")
-    if meta.get("edition"):
-        lines.append(f"edition: {meta['edition']}")
-        lines.append("")
-    if meta.get("print_run"):
-        lines.append(f"print_run: {meta['print_run']}")
-        lines.append("")
-
-    # ISBN
-    isbn = meta.get("identifier") or meta.get("isbn")
-    if isbn:
-        lines.append("identifier:")
-        if isinstance(isbn, list):
-            for item in isbn:
-                if isinstance(item, dict):
-                    lines.append(f"  - scheme: {item.get('scheme', 'ISBN-13')}")
-                    lines.append(f"    value: {item.get('value', '')}")
-                else:
-                    lines.append(f"  - scheme: ISBN-13")
-                    lines.append(f"    value: {item}")
-        else:
-            lines.append(f"  - scheme: ISBN-13")
-            lines.append(f"    value: {isbn}")
-        lines.append("")
-
-    # 制作信息
-    prod_items = []
-    for f in ("producer", "format", "pages", "word_count"):
-        if meta.get(f):
-            prod_items.append(f"{f}: {meta[f]}")
-    if prod_items:
-        lines.append("# 制作信息")
-        lines.extend(prod_items)
-        lines.append("")
-
-    # 价格
-    if meta.get("price"):
-        lines.append(f"price: {meta['price']}")
-        lines.append(f"price_currency: {meta.get('price_currency', 'CNY')}")
-        lines.append("")
-
-    # 编辑团队
-    contributors = meta.get("contributor", [])
-    if contributors:
-        lines.append("# 编辑团队")
-        lines.append("contributor:")
-        for c in contributors:
-            if isinstance(c, dict):
-                lines.append(f"  - role: {c.get('role', '')}")
-                lines.append(f"    name: {c.get('name', '')}")
-            else:
-                lines.append(f"  - role: {c}")
-                lines.append(f"    name: ")
-        lines.append("")
-
-    # 联系方式
-    phone = meta.get("contact_phone") or meta.get("phone")
-    if phone:
-        lines.append(f"contact_phone: {phone}")
-        lines.append("")
-
-    # 语言
-    lang = meta.get("language", "zh-CN")
-    lines.append(f"language: {lang}")
-    lines.append("")
-
-    # 备注
-    if meta.get("note"):
-        lines.append(f"note: {meta['note']}")
-
-    return "\n".join(lines) + "\n"
 
 
 def main():
@@ -417,7 +187,7 @@ def main():
     # 调用 LLM
     print("🔍 分析元数据...")
     try:
-        raw_response = call_llm(config, images, META_PROMPT, verbose=True)
+        raw_response = call_llm(config, images, META_PROMPT, verbose=False)
     except Exception as e:
         print(f"❌ LLM 调用失败: {e}")
         sys.exit(1)
@@ -427,9 +197,27 @@ def main():
         print(raw_response)
         print("---\n")
 
-    # 解析 YAML 并构建输出
-    meta = _parse_yaml_response(raw_response)
-    yaml_output = _build_output_yaml(meta)
+    # 提取 YAML 块并校验
+    yaml_output = _extract_yaml_block(raw_response)
+    valid, hint = _validate_yaml(yaml_output)
+
+    if not valid:
+        print(f"❌ YAML 校验失败: {hint}")
+        print("   原始响应已保存为调试信息，建议调整 prompt 重试")
+        if args.debug:
+            print(f"   提取到的内容:\n{yaml_output[:500]}")
+        sys.exit(1)
+
+    if hint:
+        print(f"\n{hint}")
+
+    # 添加自动生成标记（注释形式）
+    header = f"# 本文件由 utils_extract_meta v{VERSION} 自动生成\n"
+    header += "# 请人工核对以下信息，修正可能的识别错误\n"
+    if "---\n" in yaml_output:
+        yaml_output = yaml_output.replace("---\n", "---\n" + header, 1)
+    else:
+        yaml_output = "---\n" + header + yaml_output
 
     # 输出
     if args.dry_run:
@@ -443,7 +231,8 @@ def main():
         output_path = args.output or os.path.splitext(input_path)[0] + "_meta.yaml"
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(yaml_output)
-        field_count = len([l for l in yaml_output.split("\n") if l.strip() and not l.startswith("#") and not l.startswith("-") and ": " in l])
+        field_count = len([l for l in yaml_output.split("\n") if l.strip()
+                          and not l.startswith("#") and ": " in l])
         print(f"\n✅ 元数据已保存: {output_path}")
         print(f"   {len(yaml_output)} 字符 ({field_count} 个字段)")
         print("\n💡 建议: 请人工核对提取结果，修正可能的识别错误")
