@@ -27,6 +27,8 @@ try:
         build_headers,
         ocr_batch,
         OPENAI_AVAILABLE,
+        DEFAULT_MODEL,
+        CONFIGS,
     )
 except ImportError:
     print("请将 llm_ocr.py 放在同一目录下")

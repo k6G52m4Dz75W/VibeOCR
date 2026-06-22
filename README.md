@@ -88,10 +88,10 @@ batch_ocr.bat D:\Documents --model mineru_precision
 python utils_clean_text.py input.txt output.txt
 python utils_clean_text.py input.txt output.txt -s dedup
 
-# EPUB 元数据提取（从版权页自动提取书名/作者/ISBN 等）
-python utils_extract_meta.py book.pdf
-python utils_extract_meta.py book.pdf --model nvidia_kimi --output meta.yaml
-python utils_extract_meta.py book.pdf --dry-run --debug
+# EPUB 元数据 + 版权页提取（从版权页自动提取）
+python utils_extract_meta.py book.pdf                          # 输出到 PDF 同目录
+python utils_extract_meta.py book.pdf --model nvidia_kimi -o ./output  # 指定输出目录
+python utils_extract_meta.py book.pdf --dry-run --debug        # 预览 + 调试
 
 # 查看独立工具版本
 python utils_clean_text.py --version
@@ -190,7 +190,25 @@ python VibeOCR.py /path/to/book.pdf
 
 | 状态 | 内容 |
 |------|------|
-| ✅ 可用 | 核心 OCR 功能、12 种模型（TOML 配置热插拔）、批处理、后处理、EPUB 元数据提取 |
+| ✅ 可用 | 核心 OCR 功能、12 种模型（TOML 配置热插拔）、批处理、后处理、EPUB 元数据 + 版权页提取 |
+
+## 📝 更新日志
+
+### v4.2 (2026-06-22)
+- **一次请求两项产出**: `utils_extract_meta.py` 单次 LLM 调用同时提取 `meta.yaml` + `COPYRIGHT.md`，利用 `---...---` 分隔符拆分
+- `--output` 改为指定输出文件夹，固定生成 `meta.yaml` 和 `COPYRIGHT.md` 两个文件
+- **`--list-models` 崩溃修复**: `DEFAULT_MODEL` / `CONFIGS` 在重构后未正确导入导致 `NameError`，已补全 import
+- **`identifier` 字段修正**: 修正`utils_extract_meta.py` 提示词中 `identifier` 结构，并通知Pandoc作者官方手册错误
+
+### v4.1 (2026-06-20)
+- **YAML 处理重构**: 弃用自建 YAML 解析器，LLM 直接输出 raw YAML，解决 ISBN/编辑团队/印张等字段丢失问题
+- 简化 prompt，提升元数据提取完整度
+
+### v4.0 (2026-06-20)
+- **架构重构**: 抽取 `llm_ocr.py` 公共模块，`VibeOCR.py` 和 `utils_extract_meta.py` 共享同一套 LLM 调用代码
+- 删除约 200 行重复代码
+
+### 关键 Bug 修复
 | ✅ 已修复 | TOML 配置分离 + 热插拔, 66 个单元测试, 引入 dedup+skip 机制, 删除 config.py 改用环境变量, 全函数类型注解, 移除模块级全局变量, main() 拆分子函数, .gitignore / requirements.txt, 删 deprecated/, 移除 key 格式校验, PaddleOCR Content-Type, 异步结果公共函数, mineru 临时文件, print 统一 f-string, 清空行 |
 | 🔧 待改进 | 见 [SPEC.md](SPEC.md) 第 4 节「代码审查报告」 |
 | 📋 路线图 | 见 [SPEC.md](SPEC.md) 第 5 节「开发路线图」 |
