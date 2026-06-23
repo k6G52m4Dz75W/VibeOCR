@@ -194,11 +194,13 @@ python VibeOCR.py /path/to/book.pdf
 
 ## 📝 更新日志
 
+### v4.2.1 (2026-06-23)
+- **ISBN 正式兼容 Pandoc**: 优化 `utils_extract_meta.py` 提示词中 `identifier` 字段，采用 `urn:isbn:` 前缀格式，确保 Pandoc 转 EPUB 时正确识别 ISBN 书号
+
 ### v4.2 (2026-06-22)
 - **一次请求两项产出**: `utils_extract_meta.py` 单次 LLM 调用同时提取 `meta.yaml` + `COPYRIGHT.md`，利用 `---...---` 分隔符拆分
 - `--output` 改为指定输出文件夹，固定生成 `meta.yaml` 和 `COPYRIGHT.md` 两个文件
 - **`--list-models` 崩溃修复**: `DEFAULT_MODEL` / `CONFIGS` 在重构后未正确导入导致 `NameError`，已补全 import
-- **`identifier` 字段修正**: 修正`utils_extract_meta.py` 提示词中 `identifier` 结构，并通知Pandoc作者官方手册错误
 
 ### v4.1 (2026-06-20)
 - **YAML 处理重构**: 弃用自建 YAML 解析器，LLM 直接输出 raw YAML，解决 ISBN/编辑团队/印张等字段丢失问题

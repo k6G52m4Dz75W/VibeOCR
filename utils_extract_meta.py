@@ -44,7 +44,7 @@ creator: # 作者（若作者姓名之间包含顿号、则作为不同的作者
   text: # 姓名
 identifier:
   scheme: ISBN-13
-  text: # 去除-的13位书号
+  text: 'urn:isbn:' # 'urn:isbn:去除-的13位书号'
 publisher: # 出版社
 date: # 出版日期，格式为YYYY-MM-DD，只有年份是必须的
 lang: zh-CN # 根据版权页语言判断书籍语言
