@@ -4,6 +4,10 @@
 __version__ = "4.3.1"
 VERSION = __version__
 
+# 版本发布格言（GitHub Release 标题用，弯引号由工作流拼接）。
+# 后续由 publish_release.ps1 / 发布工作流自动从 mottos.json 抽取并回写。
+__motto__ = "A really great talent finds its happiness in execution."
+
 NAME = "VibeOCR"
 DESCRIPTION = "智能端到端书籍 OCR 解决方案 — 多模型 AI 驱动，PDF 到纯文本一键提取 | A Smart End-To-End Book OCR solution powered by AI"
 URL = "https://github.com/k6G52m4Dz75W/VibeOCR"

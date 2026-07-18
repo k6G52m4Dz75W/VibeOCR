@@ -1,0 +1,31 @@
+publish_release.ps1 使用说明（配套脚本，避免 .ps1 内写注释）
+
+【用途】
+本地手动发版的兜底脚本。正常情况下发版由 .github/workflows/release.yml
+（推 tag 触发、GitHub 服务端自动建 Release）完成；当 Actions 抽风或你想
+在本地一次性跑完时，用本脚本。
+
+【前置】
+- 本机已装 git，且凭据助手能静默拿到 github token（wincred / manager 均可）。
+- 仓库根目录有 mottos.json（Quotable 全量去重种子池，2086 条）。
+- 先在本机手动把本版本的功能更新要点写进 README 对应段落之后再跑本脚本；
+  脚本只会自动插入「### vX.Y.Z (日期) — "格言"」小标题与一句占位要点，
+  不会替你写具体改动明细。
+
+【用法】
+  .\publish_release.ps1                 # 不传版本号 → 自动在末位 +1（如 4.3.1 → 4.3.2）
+  .\publish_release.ps1 -Version 4.4.0 # 显式指定目标版本
+
+【流程】
+1. 从 mottos.json 随机抽 1 句，并剔除 README 更新日志里已用过的格言（去重）。
+2. 屏幕展示候选格言，要求输入 y/N 确认（审核闸，避免不合适的句子被发出）。
+3. 确认后写回 version.py 的 __version__ 与 __motto__，并在 README 更新日志
+   顶部插入本版本小标题。
+4. git add / commit / tag <版本号> / push origin main / push origin <版本号>。
+5. 推完 tag，GitHub Actions 的 release.yml 自动建 Release，标题为
+   「版本号 “格言”」（弯引号），正文为 README 对应段落。
+
+【约定】
+- tag 一律裸版本号（如 4.3.1，不带 v 前缀），与历史 Release 一致。
+- 格言仅版本发布时随机抽取一次并固化进 version.py / README，不会每次变。
+- 若 mottos.json 里全被用过，脚本报错退出，需扩充种子池或手工指定格言。

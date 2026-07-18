@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '[0-9]*.[0-9]*.[0-9]*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Extract version, motto and changelog
+        id: meta
+        run: |
+          python - <<'PY'
+          import re, os, pathlib
+          ver = pathlib.Path('version.py').read_text(encoding='utf-8')
+          m = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", ver)
+          version = m.group(1) if m else os.environ['GITHUB_REF_NAME']
+          mo = re.search(r"__motto__\s*=\s*['\"]([^'\"]*)['\"]", ver)
+          motto = mo.group(1).strip() if mo else ''
+          readme = pathlib.Path('README.md').read_text(encoding='utf-8')
+          lines = readme.splitlines()
+          start = None
+          for i, ln in enumerate(lines):
+              if re.match(r'###\s+v' + re.escape(version) + r'\b', ln):
+                  start = i
+                  break
+          notes = ''
+          if start is not None:
+              collected = []
+              for ln in lines[start + 1:]:
+                  if re.match(r'###\s+', ln):
+                      break
+                  collected.append(ln)
+              notes = '\n'.join(collected).strip()
+          title = version if not motto else f'{version} \u201c{motto}\u201d'
+          out = os.environ['GITHUB_OUTPUT']
+          with open(out, 'a', encoding='utf-8') as f:
+              f.write(f'version={version}\n')
+              f.write(f'title={title}\n')
+              f.write('notes<<EOF\n' + notes + '\nEOF\n')
+          PY
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ steps.meta.outputs.version }}" \
+            --title "${{ steps.meta.outputs.title }}" \
+            --notes "${{ steps.meta.outputs.notes }}"
