@@ -2,28 +2,37 @@
 # 使用 TOML 格式，支持热插拔：通过 --config 加载自定义配置
 #
 # 格式说明：
-#   [models.模型名称]            — 模型配置段
+#   [prompts]                  — 通用提示词库（放在最前，避免每个模型重复粘贴）
+#   [defaults]
+#     default_model             — 默认模型 key
+#     default_prompt            — 模型未显式指定 prompt_ref 时使用的通用提示词
+#   [models.模型名称]          — 模型配置段
+#     prompt_ref = "default"    — 引用 [prompts] 中的命名提示词（推荐）
+#     prompt_ref = ""            — 显式置空（异步任务模型，无需 prompt）
+#     prompt = """..."""        — 也可内联一次性提示词（覆盖引用，旧格式兼容）
+#     api_key_env = "none"     — 无需鉴权（本地模型如 LM Studio）；"none"/"no"/空 均视为免 key
 #   [models.模型名称.headers]     — HTTP 请求头（可选）
 #   [models.模型名称.payload_template] — 请求体模板（可选）
-#   prompt = """..."""           — 多行提示词（可选，异步模型可为空）
 #   note = "..."                 — 备注说明（可选）
 
-[defaults]
-default_model = "siliconflow_deepseek-ocr"
-
 # ============================================================
-# NVIDIA NIM 系列
+# 通用提示词库（放在最前，供各模型引用）
 # ============================================================
 
-[models.nvidia_kimi]
-name = "NVIDIA NIM / Kimi K2.6"
-api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
-model_id = "moonshotai/kimi-k2.6"
-api_key_env = "NVIDIA_API_KEY"
-batch_size = 5
-timeout = 180
-content_format = "openai"
-prompt = """
+[prompts]
+
+# 默认提示词：小说/书籍扫描件正文提取（最常用，5 个模型共用）
+default = """
+这是一部小说的扫描文件，请提取正文。
+要求：
+1. 保持段落结构，识别跨页段落，合并被分页打断的段落
+2. 删除页脚中的页码和风眼文字和图样，以及右下方的请开通会员和XX扫描王的水印图案。
+3. 请直接输出纯文本，严格忠实于原文，不增加，遗漏，修改原文文本。
+4. 使用规范的中文全角标点符号。
+"""
+
+# 逐字提取：严禁改写/同义替换（Kimi K2.6、GLM-5.2 等）
+verbatim = """
 请逐字提取图片中的文本，严禁改写、替换同义词或调整语序。
 要求：
 1. 逐字转录，保持原文每一个字、每一个标点不变
@@ -34,10 +43,84 @@ prompt = """
 6. 严格忠实于原文，不增加、遗漏、修改任何文字
 """
 
-[models.nvidia_kimi.headers]
+# 英文书籍扫描件提取
+default_en = """
+Extract the main text from this scanned novel page.
+Requirements:
+1. Maintain paragraph structure, merge paragraphs broken across pages
+2. Remove page numbers, watermarks, and advertisements
+3. Output plain text only, strictly faithful to the original
+4. Use standard Chinese full-width punctuation
+"""
+
+# Claude 专用变体（中文，含模糊文字推断）
+claude = """
+请提取这部扫描小说的正文内容。
+要求：
+1. 保持段落结构，合并被分页打断的段落
+2. 删除页脚页码、水印文字和广告图案
+3. 直接输出纯文本，忠实原文不做修改
+4. 使用中文全角标点符号
+5. 如遇模糊文字，结合上下文推断
+"""
+
+# 简短通用提示词（LM Studio、自定义模板）
+short = """
+请从扫描图片中提取文本内容。
+要求：保持原文结构，删除页码水印，使用规范标点。
+"""
+
+# DeepSeek-OCR 专用（grounding 标记，转 markdown）
+deepseek_ocr = """
+<tr>
+<|grounding|>Convert the document to markdown.
+"""
+
+# ============================================================
+# 默认配置
+# ============================================================
+
+[defaults]
+default_model = "siliconflow_deepseek-ocr"
+default_prompt = "default"
+
+# ============================================================
+# NVIDIA NIM 系列
+# ============================================================
+
+[models."nvidia_kimi-k2.6"]
+name = "NVIDIA NIM - Kimi K2.6"
+api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
+model_id = "moonshotai/kimi-k2.6"
+api_key_env = "NVIDIA_API_KEY"
+batch_size = 5
+timeout = 180
+content_format = "openai"
+prompt_ref = "verbatim"
+
+[models."nvidia_kimi-k2.6".headers]
 Accept = "application/json"
 
-[models.nvidia_kimi.payload_template]
+[models."nvidia_kimi-k2.6".payload_template]
+stream = false
+chat_template_kwargs = { thinking = false }
+
+# -------------------------------------------
+
+[models."nvidia_glm-5.2"]
+name = "NVIDIA NIM - glm-5.2"
+api_url = "https://integrate.api.nvidia.com/v1/chat/completions"
+model_id = "z-ai/glm-5.2"
+api_key_env = "NVIDIA_API_KEY"
+batch_size = 5
+timeout = 180
+content_format = "openai"
+prompt_ref = "verbatim"
+
+[models."nvidia_glm-5.2".headers]
+Accept = "application/json"
+
+[models."nvidia_glm-5.2".payload_template]
 max_tokens = 16384
 temperature = 0.1
 top_p = 1.0
@@ -54,14 +137,7 @@ api_key_env = "NVIDIA_API_KEY"
 batch_size = 5
 timeout = 180
 content_format = "openai"
-prompt = """
-这是一部小说的扫描文件，请提取正文。
-要求：
-1. 保持段落结构，识别跨页段落，合并被分页打断的段落
-2. 删除页脚中的页码和风眼文字和图样，以及右下方的请开通会员和XX扫描王的水印图案。
-3. 请直接输出纯文本，严格忠实于原文，不增加，遗漏，修改原文文本。
-4. 使用规范的中文全角标点符号。
-"""
+prompt_ref = "default"
 
 [models.nvidia_step.headers]
 Accept = "application/json"
@@ -82,14 +158,7 @@ api_key_env = "NVIDIA_API_KEY"
 batch_size = 5
 timeout = 180
 content_format = "openai"
-prompt = """
-这是一部小说的扫描文件，请提取正文。
-要求：
-1. 保持段落结构，识别跨页段落，合并被分页打断的段落
-2. 删除页脚中的页码和风眼文字和图样，以及右下方的请开通会员和XX扫描王的水印图案。
-3. 请直接输出纯文本，严格忠实于原文，不增加，遗漏，修改原文文本。
-4. 使用规范的中文全角标点符号。
-"""
+prompt_ref = "default"
 
 [models.nvidia_nemotron.headers]
 Accept = "application/json"
@@ -112,14 +181,7 @@ api_key_env = "NVIDIA_API_KEY"
 batch_size = 5
 timeout = 180
 content_format = "openai"
-prompt = """
-这是一部小说的扫描文件，请提取正文。
-要求：
-1. 保持段落结构，识别跨页段落，合并被分页打断的段落
-2. 删除页脚中的页码和风眼文字和图样，以及右下方的请开通会员和XX扫描王的水印图案。
-3. 请直接输出纯文本，严格忠实于原文，不增加，遗漏，修改原文文本。
-4. 使用规范的中文全角标点符号。
-"""
+prompt_ref = "default"
 
 [models."nvidia_qwen3.5".headers]
 Accept = "application/json"
@@ -144,10 +206,7 @@ batch_size = 1
 timeout = 120
 content_format = "openai"
 note = "总上下文限制8K，max_tokens建议不超过4096"
-prompt = """
-<tr>
-<|grounding|>Convert the document to markdown.
-"""
+prompt_ref = "deepseek_ocr"
 
 [models.siliconflow_deepseek-ocr.headers]
 Accept = "application/json"
@@ -171,14 +230,7 @@ api_key_env = "OPENAI_API_KEY"
 batch_size = 2
 timeout = 180
 content_format = "openai"
-prompt = """
-Extract the main text from this scanned novel page.
-Requirements:
-1. Maintain paragraph structure, merge paragraphs broken across pages
-2. Remove page numbers, watermarks, and advertisements
-3. Output plain text only, strictly faithful to the original
-4. Use standard Chinese full-width punctuation
-"""
+prompt_ref = "default_en"
 
 [models.openai_gpt4o.headers]
 Accept = "application/json"
@@ -201,15 +253,7 @@ api_key_env = "ANTHROPIC_API_KEY"
 batch_size = 2
 timeout = 180
 content_format = "anthropic"
-prompt = """
-请提取这部扫描小说的正文内容。
-要求：
-1. 保持段落结构，合并被分页打断的段落
-2. 删除页脚页码、水印文字和广告图案
-3. 直接输出纯文本，忠实原文不做修改
-4. 使用中文全角标点符号
-5. 如遇模糊文字，结合上下文推断
-"""
+prompt_ref = "claude"
 
 [models.anthropic_claude.headers]
 Accept = "application/json"
@@ -223,30 +267,36 @@ temperature = 0.2
 # Moonshot AI
 # ============================================================
 
-[models.moonshot_kimi]
-name = "Moonshot AI / Kimi K2.6"
+[models."kimi-k2.6"]
+name = "Moonshot AI - Kimi K2.6"
 api_url = "https://api.moonshot.cn/v1/chat/completions"
-model_id = "kimi-k2-6"
+model_id = "kimi-k2.6"
 api_key_env = "MOONSHOT_API_KEY"
 batch_size = 5
 timeout = 180
 content_format = "openai"
-prompt = """
-这是一部小说的扫描文件，请提取正文。
-要求：
-1. 保持段落结构，识别跨页段落，合并被分页打断的段落
-2. 删除页脚中的页码和风眼文字和图样，以及右下方的请开通会员和XX扫描王的水印图案。
-3. 请直接输出纯文本，严格忠实于原文，不增加，遗漏，修改原文文本。
-4. 使用规范的中文全角标点符号。
-"""
+prompt_ref = "default"
 
-[models.moonshot_kimi.headers]
+[models."kimi-k2.6".headers]
 Accept = "application/json"
 
-[models.moonshot_kimi.payload_template]
-max_tokens = 16384
-temperature = 0.2
-top_p = 1.0
+[models."kimi-k2.6".payload_template]
+stream = false
+
+[models.kimi-k3]
+name = "Moonshot AI - Kimi K3"
+api_url = "https://api.moonshot.cn/v1/chat/completions"
+model_id = "kimi-k3"
+api_key_env = "MOONSHOT_API_KEY"
+batch_size = 5
+timeout = 180
+content_format = "openai"
+prompt_ref = "default"
+
+[models.kimi-k3.headers]
+Accept = "application/json"
+
+[models.kimi-k3.payload_template]
 stream = false
 
 # ============================================================
@@ -262,6 +312,7 @@ batch_size = 1
 timeout = 30
 content_format = "paddleocr_async"
 note = "异步任务模式：提交PDF后轮询获取结果，结果返回markdown格式。支持PDF直接上传，无需预先转图片。"
+prompt_ref = ""
 
 [models.paddleocr_vl.headers]
 Accept = "application/json"
@@ -285,6 +336,7 @@ batch_size = 1
 timeout = 30
 content_format = "paddleocr_v6"
 note = "异步任务模式：提交PDF后轮询获取结果，结果返回ocrResults结构（含识别文本和区域图片URL）。"
+prompt_ref = ""
 
 [models.paddleocr_v6.headers]
 Accept = "application/json"
@@ -307,6 +359,7 @@ batch_size = 1
 timeout = 30
 content_format = "mineru_async"
 note = "MinerU 高精度提取API。支持200MB/200页。流程：申请上传URL -> PUT上传文件 -> 轮询batch结果 -> 下载zip提取full.md。扫描件请务必开启is_ocr。"
+prompt_ref = ""
 
 [models.mineru_precision.headers]
 Accept = "application/json"
@@ -321,6 +374,29 @@ language = "ch"
 extra_formats = []
 
 # ============================================================
+# LM Studio
+# ============================================================
+
+[models.lmstudio]
+name = "LM Studio"
+api_url = "http://127.0.0.1:1234/v1/chat/completions"
+model_id = ""                 # 本地模型：由 LM Studio 决定加载哪个模型，无需指定
+api_key_env = "none"          # "none" = 无需 API Key（本地模型免鉴权）
+batch_size = 1
+timeout = 180
+content_format = "openai"
+prompt_ref = "short"
+
+[models.lmstudio.headers]
+Accept = "application/json"
+
+[models.lmstudio.payload_template]
+max_tokens = 4096
+temperature = 0.1
+top_p = 1.0
+stream = false
+
+# ============================================================
 # 自定义模板（供用户复制使用）
 # ============================================================
 
@@ -332,10 +408,7 @@ api_key_env = "CUSTOM_API_KEY"
 batch_size = 1
 timeout = 180
 content_format = "openai"
-prompt = """
-请从扫描图片中提取文本内容。
-要求：保持原文结构，删除页码水印，使用规范标点。
-"""
+prompt_ref = "short"
 
 [models.custom.headers]
 Accept = "application/json"

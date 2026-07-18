@@ -59,20 +59,27 @@ def load_model_config(model_key: str | None = None) -> dict[str, Any]:
         sys.exit(1)
 
     config = CONFIGS[model_key].copy()
-    api_key_env = config["api_key_env"]
-    api_key = os.environ.get(api_key_env)
+    api_key_env = config.get("api_key_env") or ""
 
-    if not api_key and config_module:
-        api_key = getattr(config_module, api_key_env, None)
+    # 无需鉴权（本地模型，如 LM Studio）：api_key_env 为空或 none/no/optional
+    no_auth = api_key_env.strip().lower() in ("", "none", "no", "optional", "false")
+    if no_auth:
+        api_key = ""
+    else:
+        api_key = os.environ.get(api_key_env)
 
-    if not api_key:
-        print(f"⚠️  API Key 未配置")
-        print(f"   环境变量: export {api_key_env}=your_key")
-        if config_module:
-            print(f"   或修改 config.py 中的 {api_key_env}")
-        sys.exit(1)
+        if not api_key and config_module:
+            api_key = getattr(config_module, api_key_env, None)
+
+        if not api_key:
+            print(f"⚠️  API Key 未配置")
+            print(f"   环境变量: export {api_key_env}=your_key")
+            if config_module:
+                print(f"   或修改 config.py 中的 {api_key_env}")
+            sys.exit(1)
 
     config["api_key"] = api_key
+    config["requires_auth"] = not no_auth
     config["model_key"] = model_key
 
     return config
@@ -169,9 +176,11 @@ def build_payload(config: dict[str, Any], messages: list[dict]) -> dict[str, Any
 
 
 def build_headers(config: dict[str, Any]) -> dict[str, str]:
-    """构建请求头"""
+    """构建请求头（无需鉴权时跳过 Authorization）"""
     headers = config["headers"].copy()
-    headers["Authorization"] = f"Bearer {config['api_key']}"
+    api_key = config.get("api_key", "")
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     return headers
 
 
@@ -220,7 +229,7 @@ def call_llm(
     else:
         messages = [{"role": "user", "content": message_content}]
 
-    can_use_openai = OPENAI_AVAILABLE and fmt == "openai"
+    can_use_openai = OPENAI_AVAILABLE and fmt == "openai" and api_key
 
     last_error = None
     for attempt in range(1, max_retries + 1):
@@ -247,8 +256,10 @@ def call_llm(
                     payload = {"model": model_id, "messages": messages,
                                "max_tokens": template.get("max_tokens", 4096),
                                "temperature": template.get("temperature", 0.1)}
-                    headers = {**config.get("headers", {}), "x-api-key": api_key,
+                    headers = {**config.get("headers", {}),
                                "anthropic-version": "2023-06-01"}
+                    if api_key:
+                        headers["x-api-key"] = api_key
                     resp = requests.post(api_url, headers=headers, json=payload, timeout=120)
                     resp.raise_for_status()
                     text = resp.json()["content"][0]["text"]
@@ -307,7 +318,7 @@ def ocr_batch(config: dict[str, Any], images: list[dict[str, Any]],
     use_stream = payload.get("stream", False)
 
     base_url = api_url.replace("/chat/completions", "")
-    can_use_openai = OPENAI_AVAILABLE and fmt == "openai"
+    can_use_openai = OPENAI_AVAILABLE and fmt == "openai" and config["api_key"]
 
     last_error = None
     for attempt in range(1, max_retries + 1):

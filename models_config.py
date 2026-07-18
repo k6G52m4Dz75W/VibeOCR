@@ -29,45 +29,49 @@ _DEFAULT_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 
 
 # 全局缓存
 CONFIGS: dict = {}
+PROMPTS: dict = {}          # [prompts] 中的命名提示词库
 DEFAULT_MODEL: str = ""
+DEFAULT_PROMPT: str = ""    # 模型未显式指定 prompt 时引用的默认提示词
 _loaded_files: list[str] = []
 
 
-def _load_toml(file_path: str) -> dict:
-    """加载单个 TOML 文件并返回模型配置"""
+def _load_toml_file(file_path: str) -> dict:
+    """加载单个 TOML 文件，返回原始解析字典（不解析 prompt 引用）"""
     if not os.path.exists(file_path):
         print(f"⚠️  配置文件不存在: {file_path}")
         return {}
 
     with open(file_path, "rb") as f:
-        data = tomllib.load(f)
+        return tomllib.load(f)
 
-    result = {}
 
-    # 解析 [defaults] 段
-    global DEFAULT_MODEL
-    defaults = data.get("defaults", {})
-    if defaults.get("default_model"):
-        DEFAULT_MODEL = defaults["default_model"]
+def _resolve_prompt(config: dict) -> str | None:
+    """
+    解析模型最终使用的提示词，优先级：
+    1. prompt_ref = "名称"   → 引用 [prompts] 中的命名提示词
+    2. prompt_ref = ""        → 显式置空（异步任务模型）
+    3. prompt = "..."         → 内联一次性提示词（旧格式兼容）
+    4. default_prompt          → 回退到默认命名提示词
+    5. 以上皆无               → None
+    """
+    if "prompt_ref" in config:
+        ref = config.pop("prompt_ref")
+        if ref == "":
+            return None  # 异步任务：显式无 prompt
+        if ref not in PROMPTS:
+            print(f"⚠️  prompt_ref '{ref}' 未在 [prompts] 中定义，按空 prompt 处理")
+            return None
+        return PROMPTS[ref]
 
-    # 解析 [models.*] 段
-    models = data.get("models", {})
-    for key, cfg in models.items():
-        config = dict(cfg)
+    # 内联 prompt（兼容旧格式 / 一次性覆盖）
+    if "prompt" in config:
+        return config["prompt"]
 
-        if "headers" in config:
-            config["headers"] = dict(config["headers"])
-        if "payload_template" in config:
-            expanded = {}
-            _expand_inline_tables(config["payload_template"], expanded)
-            config["payload_template"] = expanded
+    # 回退到默认提示词
+    if DEFAULT_PROMPT:
+        return PROMPTS.get(DEFAULT_PROMPT)
 
-        config.setdefault("prompt", None)
-        config.setdefault("note", "")
-
-        result[key] = config
-
-    return result
+    return None
 
 
 def _expand_inline_tables(source: dict, target: dict, prefix: str = "") -> None:
@@ -85,32 +89,61 @@ def load_configs(config_path: str | None = None) -> dict:
     """
     加载模型配置。
 
-    策略：
-    1. 默认加载 `models_config.toml`（内置配置）
-    2. 如果指定了 `config_path`（来自 --config），加载并合并（覆盖）
-    3. 按加载顺序合并，后加载的覆盖同名字典键
+    策略（两遍加载）：
+    1. 第一遍：收集所有文件中的 [prompts] 与 [defaults]，
+       构建命名提示词库 PROMPTS 与默认模型/默认提示词
+    2. 第二遍：解析 [models.*]，将 prompt_ref 解析为实际提示词
+    3. 内置配置先加载，外部 --config 后加载并覆盖同名项
     """
-    global CONFIGS, DEFAULT_MODEL, _loaded_files
+    global CONFIGS, PROMPTS, DEFAULT_MODEL, DEFAULT_PROMPT, _loaded_files
     _loaded_files = []
+    PROMPTS = {}
+    DEFAULT_MODEL = ""
+    DEFAULT_PROMPT = ""
 
-    # 1. 加载默认配置
-    builtin = _load_toml(_DEFAULT_CONFIG_PATH)
-    CONFIGS = dict(builtin)
+    files = [_DEFAULT_CONFIG_PATH]
     _loaded_files.append(_DEFAULT_CONFIG_PATH)
-
-    # 2. 加载外部配置（如果提供）
     if config_path and os.path.exists(config_path):
-        external = _load_toml(config_path)
-        if external:
-            CONFIGS.update(external)
-            _loaded_files.append(config_path)
-            print(f"📦 已加载外部配置: {config_path}")
+        files.append(config_path)
+        _loaded_files.append(config_path)
 
-    # 3. 如果 TOML 中未指定默认模型，使用内置 fallback
+    # ---- 第一遍：收集 prompts / defaults ----
+    for fp in files:
+        data = _load_toml_file(fp)
+        defaults = data.get("defaults", {})
+        if defaults.get("default_model"):
+            DEFAULT_MODEL = defaults["default_model"]
+        if defaults.get("default_prompt"):
+            DEFAULT_PROMPT = defaults["default_prompt"]
+        PROMPTS.update(data.get("prompts", {}))
+
+    # ---- 第二遍：解析 models ----
+    CONFIGS = {}
+    for fp in files:
+        data = _load_toml_file(fp)
+        for key, cfg in data.get("models", {}).items():
+            config = dict(cfg)
+
+            if "headers" in config:
+                config["headers"] = dict(config["headers"])
+            if "payload_template" in config:
+                expanded = {}
+                _expand_inline_tables(config["payload_template"], expanded)
+                config["payload_template"] = expanded
+
+            config["prompt"] = _resolve_prompt(config)
+            config.setdefault("note", "")
+
+            CONFIGS[key] = config
+
+    if config_path and os.path.exists(config_path):
+        print(f"📦 已加载外部配置: {config_path}")
+
+    # 如果 TOML 中未指定默认模型，使用内置 fallback
     if not DEFAULT_MODEL:
         DEFAULT_MODEL = "siliconflow_deepseek-ocr"
 
-    # 4. 环境变量覆盖默认模型
+    # 环境变量覆盖默认模型
     DEFAULT_MODEL = os.environ.get("OCR_MODEL", DEFAULT_MODEL)
 
     return CONFIGS
@@ -125,7 +158,10 @@ load_configs()
 if __name__ == "__main__":
     print(f"📂 加载的配置文件: {', '.join(_loaded_files)}")
     print(f"🤖 默认模型: {DEFAULT_MODEL}")
+    print(f"📝 默认提示词: {DEFAULT_PROMPT or '(无)'}")
+    print(f"📚 命名提示词库: {', '.join(PROMPTS.keys()) or '(空)'}")
     print(f"📋 共 {len(CONFIGS)} 个模型配置:\n")
     for name, cfg in CONFIGS.items():
+        has_prompt = "✓" if cfg.get("prompt") else "—"
         note = f" — {cfg.get('note', '')}" if cfg.get('note') else ""
-        print(f"  {name:30s} {cfg['name']}{note}")
+        print(f"  {name:30s} {cfg['name']}  [prompt:{has_prompt}]{note}")

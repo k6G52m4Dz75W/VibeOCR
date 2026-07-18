@@ -155,19 +155,25 @@ VibeOCR/
 
 ### 自定义 Prompt
 
-编辑 `models_config.toml`，找到对应模型段，修改或添加 `prompt` 字段即可：
+提示词已经抽离到文件顶部的 `[prompts]` 通用库，避免每个模型重复粘贴。每个模型通过 `prompt_ref` 引用其中一条即可：
 
 ```toml
-[models.nvidia_kimi]
-# ... 其他配置 ...
-prompt = """
-请逐字提取图片中的文本，严禁改写...
-要求：
-1. 逐字转录，保持原文每一个字、每一个标点不变
-2. 保持段落结构，合并被分页打断的段落
-3. 删除页脚页码和水印图案
+# 文件顶部 [prompts] 段定义命名提示词（只需写一次）
+[prompts]
+default = """
+这是一部小说的扫描文件，请提取正文。
+要求：保持段落结构，合并跨页段落，删除页码水印...
 """
+
+[models.nvidia_step]
+# ... 其他配置 ...
+prompt_ref = "default"   # 引用 [prompts] 中的命名提示词（推荐）
 ```
+
+- `prompt_ref = "default"` → 引用 `[prompts]` 中的命名提示词
+- `prompt_ref = ""` → 显式置空（异步任务模型，如 PaddleOCR / MinerU，无需 prompt）
+- 也可直接写内联 `prompt = """..."""` 做一次性覆盖（旧格式仍兼容）
+- 模型未指定 `prompt_ref` 时，回退到 `[defaults]` 中的 `default_prompt`（当前为 `default`）
 
 ### Docker / 无头服务器
 
@@ -190,23 +196,34 @@ python VibeOCR.py /path/to/book.pdf
 
 | 状态 | 内容 |
 |------|------|
-| ✅ 可用 | 核心 OCR 功能、12 种模型（TOML 配置热插拔）、批处理、后处理、EPUB 元数据 + 版权页提取 |
+| ✅ 可用 | 核心 OCR 功能、15 种模型（TOML 配置热插拔，提示词抽离到 `[prompts]`，支持本地免鉴权模型）、批处理、后处理、EPUB 元数据 + 版权页提取 |
 
 ## 📝 更新日志
 
-### v4.2.1 (2026-06-23)
+### v4.3.1 (2026-07-17) — "A really great talent finds its happiness in execution."
+- **修复 本地免鉴权崩溃**: v4.3.0 虽声称 `lmstudio` 免 key 可运行，但空 `api_key` 仍会构造 `OpenAI(api_key="")` 触发 SDK 的 `Missing credentials` 异常。现改为**空 key 时强制走 `requests` 路径**（该路径用 `build_headers`，空 key 本就不发 `Authorization` 头），LM Studio 本地服务免鉴权真正可用
+- **补录历史发布格言**: 将 GitHub Releases 标题上已有的 4 句版本格言补入 README 对应更新日志小标题（v4.0 / v4.1 / v4.2 / v4.2.1），使文档与 Release 标题一致；后续发布将由自动化流程统一抽取并写入
+
+### v4.3.0 (2026-07-17) — "The superior man is modest in his speech but exceeds in his actions."
+- **提示词去重**: 抽离 `[prompts]` 通用提示词库到文件最前，各模型用 `prompt_ref` 引用；异步 OCR 模型（`paddleocr_vl`/`paddleocr_v6`/`mineru_precision`）用 `prompt_ref = ""` 显式置空
+- **本地免鉴权模型**: 新增 `api_key_env = "none"` 约定（"none"/"no"/空 均视为免 key），`lmstudio` 等本地模型可无需 API Key 直接运行；`build_headers` 在无 key 时不发送 `Authorization` 头
+- **修复 TOML 点号 key bug**: `nvidia_kimi-k2.6`/`nvidia_glm-5.2`/`kimi-k2.6` 三个未加引号的点号 model key 此前被 TOML 错误解析为嵌套子表（模型名损坏），已统一改为带引号写法
+- `models_config.py` 改为两遍加载（先收集 `[prompts]`/`[defaults]`，再解析 `[models.*]`），外部 `--config` 可自带 `[prompts]` 合并/覆盖
+- **优化 `utils_extract_meta.py` 提示词**: `COPYRIGHT.md` 的"出版信息"排版由「表格表头」改为「表格前的 `# 出版信息` 一级标题」（表头留空），输出格式更规范
+
+### v4.2.1 (2026-06-23) — "It is better to be hated for what you are than to be loved for what you are not."
 - **ISBN 正式兼容 Pandoc**: 优化 `utils_extract_meta.py` 提示词中 `identifier` 字段，采用 `urn:isbn:` 前缀格式，确保 Pandoc 转 EPUB 时正确识别 ISBN 书号
 
-### v4.2 (2026-06-22)
+### v4.2 (2026-06-22) — "Stop worrying about growing old. And think about growing up."
 - **一次请求两项产出**: `utils_extract_meta.py` 单次 LLM 调用同时提取 `meta.yaml` + `COPYRIGHT.md`，利用 `---...---` 分隔符拆分
 - `--output` 改为指定输出文件夹，固定生成 `meta.yaml` 和 `COPYRIGHT.md` 两个文件
 - **`--list-models` 崩溃修复**: `DEFAULT_MODEL` / `CONFIGS` 在重构后未正确导入导致 `NameError`，已补全 import
 
-### v4.1 (2026-06-20)
+### v4.1 (2026-06-20) — "Those who don't believe in magic will never find it."
 - **YAML 处理重构**: 弃用自建 YAML 解析器，LLM 直接输出 raw YAML，解决 ISBN/编辑团队/印张等字段丢失问题
 - 简化 prompt，提升元数据提取完整度
 
-### v4.0 (2026-06-20)
+### v4.0 (2026-06-20) — "I can't go back to yesterday because I was a different person then."
 - **架构重构**: 抽取 `llm_ocr.py` 公共模块，`VibeOCR.py` 和 `utils_extract_meta.py` 共享同一套 LLM 调用代码
 - 删除约 200 行重复代码
 
