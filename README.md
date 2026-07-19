@@ -12,7 +12,7 @@
 
 ### 核心特性
 
-- 🔄 **多模型支持** — 支持 11 种模型/API，根据精度、成本和速度灵活切换
+- 🔄 **多模型支持** — 支持多种模型/API，根据精度和成本灵活切换
 - 📄 **PDF 直传** — 异步模式支持整个 PDF 直接上传（PaddleOCR-VL / PP-OCRv6 / MinerU），无需预先转图片
 - 🧹 **智能后处理** — 自动清理 OCR 标签、合并断行段落、转换标点为中文全角
 - 📦 **批处理** — 支持目录级别批量处理 PDF / JPG / PNG 等常见格式
@@ -102,18 +102,24 @@ python utils_extract_meta.py -v
 
 ## 🎯 模型选择指南
 
-| 模型配置 Key | 适用场景 | 成本 | 精度 | 速度 |
-|-------------|---------|------|------|------|
-| `siliconflow_deepseek-ocr` | 普通书籍、小说 | 💰低 | ⭐⭐⭐ | ⚡快 |
-| `siliconflow_paddleocr-vl-1.5` | 普通书籍、图文混排 | 💰低 | ⭐⭐⭐ | ⚡快 |
-| `mineru_precision` | 高精度扫描件、复杂版式 | 💰中 | ⭐⭐⭐⭐⭐ | 🐢慢（异步） |
-| `paddleocr-vl-1.6` | 中文文档、古籍（Markdown输出） | 💰低 | ⭐⭐⭐⭐ | 🐢慢（异步） |
-| `pp-ocrv6` | 快速纯文本身份、简单版面 | 💰低 | ⭐⭐⭐ | 🐢慢（异步） |
-| `nvidia_kimi-k2.6` | 中英文书籍、高通量 | 💰中 | ⭐⭐⭐⭐ | ⚡⚡快 |
-| `moonshot_kimi` | 中文长文档 | 💰中 | ⭐⭐⭐⭐ | ⚡快 |
-| `nvidia_nemotron-3-nano` | 超大上下文需求 | 💰中 | ⭐⭐⭐ | ⚡⚡快 |
-| `gpt-4o` | 英文为主、稳定性优先 | 💰高 | ⭐⭐⭐⭐⭐ | ⚡快 |
-| `claude-sonnet-5` | 多语言、推理任务 | 💰高 | ⭐⭐⭐⭐⭐ | ⚡快 |
+| 模型配置 Key | 成本 | 精度 |
+|-------------|------|------|
+| `siliconflow_deepseek-ocr` | 💰 | ⭐⭐⭐ |
+| `siliconflow_paddleocr-vl-1.5` | 💰 | ⭐⭐⭐⭐ |
+| `mineru_precision` | 💰 | ⭐⭐⭐⭐ |
+| `paddleocr-vl-1.6` | 💰 | ⭐⭐⭐⭐ |
+| `pp-ocrv6` | 💰 | ⭐⭐⭐ |
+| `nvidia_kimi-k2.6` | 💰 | ⭐⭐⭐⭐⭐ |
+| `nvidia_minimax-m3` | 💰 | ⭐⭐⭐ |
+| `nvidia_step-3.7-flash` | 💰 | ⭐⭐⭐ |
+| `nvidia_nemotron-3-nano` | 💰 | ⭐⭐⭐ |
+| `kimi-k2.6` | 💰💰💰💰 | ⭐⭐⭐⭐⭐ |
+| `kimi-k3` | 💰💰💰💰💰 | ⭐⭐⭐⭐⭐ |
+| `gpt-4o` | 💰💰💰💰 | ⭐⭐⭐⭐ |
+| `claude-sonnet-5` | 💰💰💰💰💰 | — |
+| `lmstudio` | 💰💰 | ⭐⭐⭐ |
+
+> 💡 `claude-sonnet-5` 精度尚未实测，留待后续验证。
 
 > 💡 **新手上路推荐**: 从 `siliconflow_deepseek-ocr` 开始（免费额度/低成本），遇到复杂版式时切换到 `mineru_precision`
 
