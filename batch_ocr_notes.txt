@@ -1,0 +1,26 @@
+VibeOCR 批处理脚本说明 (batch_ocr.bat)
+========================================
+
+【拖放用法】
+把包含 PDF / 图片的文件夹拖到 batch_ocr.bat 上即可批量处理。
+也可命令行调用：
+  batch_ocr.bat D:\Documents --model mineru_precision
+
+【指定 Python 解释器（兼容 Miniconda 等）】
+脚本默认用 PATH 里的 python。若你的 Python 装在 Miniconda / 虚拟环境，
+且未注册为系统默认 python，请编辑 batch_ocr.bat 顶部这一行：
+
+  set "PYTHON_EXE=python"
+
+改成你的解释器完整路径，例如：
+  set "PYTHON_EXE=C:\Users\you\miniconda3\python.exe"
+  set "PYTHON_EXE=C:\Users\you\miniconda3\envs\vibe\python.exe"
+
+路径含空格也能用（脚本已用引号包裹）。改完保存，重新拖放即可。
+
+【支持的文件类型】
+.pdf .jpg .jpeg .png .bmp .tiff .webp
+
+【默认模型】
+未用 --model 指定时，默认 mineru_precision。
+可用模型见 README 的「模型选择指南」。

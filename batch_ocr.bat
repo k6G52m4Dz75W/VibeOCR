@@ -2,7 +2,8 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-:: check args
+set "PYTHON_EXE=python"
+
 if "%~1"=="" (
     echo Usage: %~nx0 dir_path [--model model_name]
     echo Example: %~nx0 D:\Documents --model mineru_precision
@@ -13,7 +14,6 @@ if "%~1"=="" (
 set "TARGET_DIR=%~1"
 set "MODEL=mineru_precision"
 
-:: parse --model
 if "%~2"=="--model" (
     if not "%~3"=="" (
         set "MODEL=%~3"
@@ -27,14 +27,12 @@ echo Model: %MODEL%
 echo ==========================================
 echo.
 
-:: check dir
 if not exist "%TARGET_DIR%" (
     echo Error: Directory not found - %TARGET_DIR%
     pause
     exit /b 1
 )
 
-:: count files
 set "FILE_COUNT=0"
 for %%f in ("%TARGET_DIR%\*.pdf" "%TARGET_DIR%\*.jpg" "%TARGET_DIR%\*.jpeg" "%TARGET_DIR%\*.png" "%TARGET_DIR%\*.bmp" "%TARGET_DIR%\*.tiff" "%TARGET_DIR%\*.webp") do (
     set /a FILE_COUNT+=1
@@ -49,12 +47,11 @@ if %FILE_COUNT%==0 (
 echo Found %FILE_COUNT% file(s), starting...
 echo.
 
-:: process files
 set "CURRENT=0"
 for %%f in ("%TARGET_DIR%\*.pdf" "%TARGET_DIR%\*.jpg" "%TARGET_DIR%\*.jpeg" "%TARGET_DIR%\*.png" "%TARGET_DIR%\*.bmp" "%TARGET_DIR%\*.tiff" "%TARGET_DIR%\*.webp") do (
     set /a CURRENT+=1
     echo [%CURRENT%/%FILE_COUNT%] Processing: %%~nxf
-    python VibeOCR.py "%%f" --model %MODEL%
+    "%PYTHON_EXE%" VibeOCR.py "%%f" --model %MODEL%
     if errorlevel 1 (
         echo     [WARN] Failed: %%~nxf
     ) else (
