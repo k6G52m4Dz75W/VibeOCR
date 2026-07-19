@@ -58,6 +58,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ steps.meta.outputs.version }}" \
-            --title "${{ steps.meta.outputs.title }}" \
-            --notes-file release_notes.md
+          python - <<'PY'
+          import re, subprocess, pathlib, sys
+          ver = pathlib.Path('version.py').read_text(encoding='utf-8')
+          m = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", ver)
+          version = m.group(1)
+          mo = re.search(r"__motto__\s*=\s*['\"]([^'\"]*)['\"]", ver)
+          motto = mo.group(1).strip() if mo else ''
+          # 用参数列表调用 gh，避免格言中的引号被 shell 二次解析导致失败
+          title = version if not motto else f'{version} "{motto}"'
+          r = subprocess.run(
+              ["gh", "release", "create", version,
+               "--title", title,
+               "--notes-file", "release_notes.md"],
+              check=False,
+          )
+          sys.exit(r.returncode)
+          PY
