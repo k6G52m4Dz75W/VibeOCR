@@ -45,12 +45,13 @@ jobs:
                       break
                   collected.append(ln)
               notes = '\n'.join(collected).strip()
-          title = version if not motto else f'{version} \u201c{motto}\u201d'
+          title = version if not motto else f'{version} "{motto}"'
           out = os.environ['GITHUB_OUTPUT']
           with open(out, 'a', encoding='utf-8') as f:
               f.write(f'version={version}\n')
               f.write(f'title={title}\n')
-              f.write('notes<<EOF\n' + notes + '\nEOF\n')
+              with open('release_notes.md', 'w', encoding='utf-8') as nf:
+                  nf.write(notes)
           PY
 
       - name: Create GitHub Release
@@ -59,4 +60,4 @@ jobs:
         run: |
           gh release create "${{ steps.meta.outputs.version }}" \
             --title "${{ steps.meta.outputs.title }}" \
-            --notes "${{ steps.meta.outputs.notes }}"
+            --notes-file release_notes.md
