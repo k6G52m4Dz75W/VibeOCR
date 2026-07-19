@@ -152,7 +152,8 @@ VibeOCR/
 ├── utils_clean_text.py        # 独立文本清理 CLI
 ├── utils_map_p_br.py          # OCR 段落空白映射工具
 ├── utils_insert_pagebreak.py  # EPUB 标准分页符嵌入工具
-├── batch_ocr.bat              # Windows 批处理脚本
+├── batch_ocr.bat              # Windows 批处理脚本（支持顶部指定 PYTHON_EXE / MODEL / SOURCE）
+├── batch_ocr_notes.txt        # 批处理脚本使用说明（Python 路径、默认模型、拖放/双击用法）
 ├── README.md                  # 项目介绍
 ├── SPEC.md                    # 项目开发规划书
 └── LICENSE                    # MIT 许可证
