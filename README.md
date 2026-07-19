@@ -208,6 +208,15 @@ python VibeOCR.py /path/to/book.pdf
 
 ## 📝 更新日志
 
+### v4.5.0 (2026-07-19) — "All action results from thought, so it is thoughts that matter."
+- **批处理脚本升级（batch_ocr.bat，功能更新）**:
+  - 顶部新增三行可改配置：`PYTHON_EXE`（指定 Python 解释器路径，兼容 Miniconda / 虚拟环境等未注册为默认 python 的情况，真正实现拖放运行）、`MODEL`（默认模型）、`SOURCE`（默认输入源）
+  - 新增 `SOURCE` 默认输入源：不拖放、直接双击脚本时，用 `SOURCE` 作为批量处理来源，无需手动拖拽
+  - 输入源同时支持「文件夹」（遍历其中所有 pdf/jpg/jpeg/png/bmp/tiff/webp）与「单个文件」两种形态
+  - 原 `TARGET_DIR`（拼写错误且语义为「来源」）重命名为 `SOURCE`/`INPUT`，明确其作为输入来源的含义
+  - 修复循环内进度计数 bug：原 `%CURRENT%`/`%FILE_COUNT%` 为解析期取值、永远显示初始值，改用延迟展开 `!CURRENT!`/`!FILE_COUNT!`，进度 `[3/7]` 现在正确递增
+  - 遵循项目 .bat 零注释铁律：脚本内注释全部移入独立的 `batch_ocr_notes.txt` 使用说明文件，README 项目结构树同步补录该说明文件
+
 ### v4.4.2 (2026-07-19) — "Discipline is the bridge between goals and accomplishment."
 - **加固 LLM 调用路径（llm_ocr.py）**:
   - OpenAI SDK 路径新增 `_split_sdk_params` 拆参：白名单内正式参数（model/messages/stream/max_tokens/temperature/top_p/seed 等）走 kwargs，扩展字段（如 NIM 的 `reasoning_budget`）经 `extra_body` 完整透传 —— 修复 nemotron 等推理模型走 SDK 时 `reasoning_budget` 被静默丢弃（#20）
