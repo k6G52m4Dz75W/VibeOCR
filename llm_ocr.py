@@ -184,6 +184,33 @@ def build_headers(config: dict[str, Any]) -> dict[str, str]:
     return headers
 
 
+# OpenAI SDK chat.completions.create 认识的正式参数（其余走 extra_body 透传）
+_OPENAI_SDK_PARAMS = {
+    "model", "messages", "stream", "max_tokens", "temperature", "top_p",
+    "n", "stop", "frequency_penalty", "presence_penalty", "logit_bias",
+    "user", "response_format", "seed", "logprobs", "top_logprobs",
+    "modalities", "tools", "tool_choice", "parallel_tool_calls",
+}
+
+
+def _split_sdk_params(payload: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    把完整请求体拆分为 (SDK 正式参数, extra_body)。
+
+    OpenAI 兼容 SDK 只认白名单内字段；NIM 等扩展字段
+    （如 reasoning_budget、chat_template_kwargs）必须塞进 extra_body
+    透传，否则走 SDK 路径时会被静默丢弃。
+    """
+    kwargs: dict[str, Any] = {}
+    extra: dict[str, Any] = {}
+    for k, v in payload.items():
+        if k in _OPENAI_SDK_PARAMS:
+            kwargs[k] = v
+        else:
+            extra[k] = v
+    return kwargs, extra
+
+
 # ======================================================================
 # LLM API 调用
 # ======================================================================
@@ -239,13 +266,12 @@ def call_llm(
             if can_use_openai:
                 base_url = api_url.replace("/chat/completions", "")
                 client = OpenAI(api_key=api_key, base_url=base_url)
-                response = client.chat.completions.create(
-                    model=model_id,
-                    messages=messages,
-                    max_tokens=template.get("max_tokens", 4096),
-                    temperature=template.get("temperature", 0.1),
-                    top_p=template.get("top_p", 1.0),
-                )
+                sdk_payload = {"model": model_id, "messages": messages,
+                               "stream": False, **template}
+                kwargs, extra = _split_sdk_params(sdk_payload)
+                if extra:
+                    kwargs["extra_body"] = extra
+                response = client.chat.completions.create(**kwargs)
                 text = response.choices[0].message.content
                 if verbose:
                     print(f"✅ {len(text)} 字符")
@@ -293,7 +319,8 @@ def call_llm(
 
 
 def ocr_batch(config: dict[str, Any], images: list[dict[str, Any]],
-              batch_info: str, max_retries: int = 3, retry_delay: int = 5) -> str:
+              batch_info: str, max_retries: int = 3, retry_delay: int = 5,
+              progress_every: int = 200) -> str:
     """
     发送一批图片的 OCR 请求，支持 stream / non-stream 模式。
 
@@ -323,29 +350,22 @@ def ocr_batch(config: dict[str, Any], images: list[dict[str, Any]],
     last_error = None
     for attempt in range(1, max_retries + 1):
         lib_name = "openai库" if can_use_openai else "requests"
-        print(f"  发送请求 [{lib_name}] (尝试 {attempt}/{max_retries}, stream={use_stream})...", end=" ")
+        print(f"  发送请求 [{lib_name}] (尝试 {attempt}/{max_retries}, stream={use_stream})...")
         try:
             if can_use_openai:
                 client = OpenAI(api_key=config["api_key"], base_url=base_url)
-                msg_content = []
-                for img in images:
-                    msg_content.append(img)
-                msg_content.append({"type": "text", "text": prompt + "\n\n【当前批次: " + batch_info + "】"})
-
-                response = client.chat.completions.create(
-                    model=config["model_id"],
-                    messages=[{"role": "user", "content": msg_content}],
-                    stream=use_stream,
-                    max_tokens=payload.get("max_tokens", 4096),
-                    temperature=payload.get("temperature", 0.2),
-                    top_p=payload.get("top_p", 1.0)
-                )
+                kwargs, extra = _split_sdk_params(payload)
+                if extra:
+                    kwargs["extra_body"] = extra
+                response = client.chat.completions.create(**kwargs)
 
                 if use_stream:
                     text = ""
                     for chunk in response:
                         if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
                             text += chunk.choices[0].delta.content
+                            print(f"\r  已接收 {len(text)} 字符" + " " * 8, end="", flush=True)
+                    print()
                 else:
                     text = response.choices[0].message.content
                 print(f"✅ {len(text)}字符 ({'流式' if use_stream else '非流式'})")
@@ -360,19 +380,31 @@ def ocr_batch(config: dict[str, Any], images: list[dict[str, Any]],
                 if use_stream:
                     text = ""
                     for line in resp.iter_lines():
-                        if line:
-                            line_str = line.decode("utf-8")
-                            if line_str.startswith("data: "):
-                                data_str = line_str[6:]
-                                if data_str == "[DONE]":
-                                    break
-                                try:
-                                    chunk = json.loads(data_str)
-                                    delta = chunk.get("choices", [{}])[0].get("delta", {})
-                                    if delta.get("content"):
-                                        text += delta["content"]
-                                except json.JSONDecodeError:
-                                    continue
+                        if not line:
+                            continue
+                        line_str = line.decode("utf-8")
+                        if not line_str.startswith("data: "):
+                            continue
+                        data_str = line_str[6:]
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            chunk = json.loads(data_str)
+                        except json.JSONDecodeError:
+                            continue
+                        if fmt == "anthropic":
+                            # Anthropic SSE：event/content_block_delta + delta.text
+                            if chunk.get("type") == "content_block_delta":
+                                dt = chunk.get("delta", {})
+                                if dt.get("type") == "text_delta" and dt.get("text"):
+                                    text += dt["text"]
+                                    print(f"\r  已接收 {len(text)} 字符" + " " * 8, end="", flush=True)
+                        else:
+                            delta = chunk.get("choices", [{}])[0].get("delta", {})
+                            if delta.get("content"):
+                                text += delta["content"]
+                                print(f"\r  已接收 {len(text)} 字符" + " " * 8, end="", flush=True)
+                    print()
                 else:
                     data = resp.json()
                     text = (data["content"][0]["text"] if fmt == "anthropic"

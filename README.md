@@ -201,6 +201,14 @@ python VibeOCR.py /path/to/book.pdf
 
 ## 📝 更新日志
 
+### v4.4.2 (2026-07-19) — "Discipline is the bridge between goals and accomplishment."
+- **加固 LLM 调用路径（llm_ocr.py）**:
+  - OpenAI SDK 路径新增 `_split_sdk_params` 拆参：白名单内正式参数（model/messages/stream/max_tokens/temperature/top_p/seed 等）走 kwargs，扩展字段（如 NIM 的 `reasoning_budget`）经 `extra_body` 完整透传 —— 修复 nemotron 等推理模型走 SDK 时 `reasoning_budget` 被静默丢弃（#20）
+  - `call_llm` 与 `ocr_batch` 两条 SDK 路径均修复
+- **Anthropic 流式解析分支（#18）**: `ocr_batch` 的 requests 流式循环新增 `fmt == "anthropic"` 分支，按 `content_block_delta` + `delta.text` 解析 —— 消除「给 claude 开 `stream=true` 时 requests 路径解析失败拿空文本」的潜伏 bug
+- **流式实时进度（#19）**: 流式收文本时每 chunk 刷新 `已接收 N 字符` 单行进度（\r 覆盖），不再只在最后打印总数
+- **models_config.toml 清理（#17）**: 全部流式模型 `Accept` 头对齐为 `text/event-stream`、非流式保持 `application/json`；移除历史残留的 `chat_template_kwargs` 杂质 key
+
 ### v4.4.1 (2026-07-19) — "One fails forward toward success."
 - **meta 提示词抽离到配置**: 将 `utils_extract_meta.py` 中写死的版权页/元数据提取提示词移入 `models_config.toml` 的 `[meta]` 段（`prompt` 字段），脚本改从配置读取（`META.get("prompt")`），便于在不改代码的情况下调整提取模板
 - `models_config.py` 两遍加载新增 `[meta]` 段收集，供元数据提取复用
