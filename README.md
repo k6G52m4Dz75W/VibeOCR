@@ -201,6 +201,10 @@ python VibeOCR.py /path/to/book.pdf
 
 ## 📝 更新日志
 
+### v4.4.1 (2026-07-19) — "One fails forward toward success."
+- **meta 提示词抽离到配置**: 将 `utils_extract_meta.py` 中写死的版权页/元数据提取提示词移入 `models_config.toml` 的 `[meta]` 段（`prompt` 字段），脚本改从配置读取（`META.get("prompt")`），便于在不改代码的情况下调整提取模板
+- `models_config.py` 两遍加载新增 `[meta]` 段收集，供元数据提取复用
+
 ### v4.4.0 (2026-07-19) — "Peace cannot be kept by force. It can only be achieved by understanding."
 - **新增 SiliconFlow PaddleOCR-VL-1.5 模型**: 走 SiliconFlow 同步/流式端点（`model_id = "PaddlePaddle/PaddleOCR-VL-1.5"`），`prompt = ""` 与异步兄弟 `paddleocr-vl-1.6` 对齐（纯图像输入，原生 OCR 模型不需提示词）
 - **模型命名体系收敛（关键重构）**:

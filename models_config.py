@@ -32,6 +32,7 @@ CONFIGS: dict = {}
 PROMPTS: dict = {}          # [prompts] 中的命名提示词库
 DEFAULT_MODEL: str = ""
 DEFAULT_PROMPT: str = ""    # 模型未显式指定 prompt 时引用的默认提示词
+META: dict = {}            # [meta] 元数据提取（utils_extract_meta.py）独立提示词
 _loaded_files: list[str] = []
 
 
@@ -90,16 +91,17 @@ def load_configs(config_path: str | None = None) -> dict:
     加载模型配置。
 
     策略（两遍加载）：
-    1. 第一遍：收集所有文件中的 [prompts] 与 [defaults]，
-       构建命名提示词库 PROMPTS 与默认模型/默认提示词
+    1. 第一遍：收集所有文件中的 [prompts]、[defaults] 与 [meta]，
+       构建命名提示词库 PROMPTS、默认模型/默认提示词、元数据提取提示词 META
     2. 第二遍：解析 [models.*]，将 prompt_ref 解析为实际提示词
     3. 内置配置先加载，外部 --config 后加载并覆盖同名项
     """
-    global CONFIGS, PROMPTS, DEFAULT_MODEL, DEFAULT_PROMPT, _loaded_files
+    global CONFIGS, PROMPTS, DEFAULT_MODEL, DEFAULT_PROMPT, META, _loaded_files
     _loaded_files = []
     PROMPTS = {}
     DEFAULT_MODEL = ""
     DEFAULT_PROMPT = ""
+    META = {}
 
     files = [_DEFAULT_CONFIG_PATH]
     _loaded_files.append(_DEFAULT_CONFIG_PATH)
@@ -116,6 +118,7 @@ def load_configs(config_path: str | None = None) -> dict:
         if defaults.get("default_prompt"):
             DEFAULT_PROMPT = defaults["default_prompt"]
         PROMPTS.update(data.get("prompts", {}))
+        META.update(data.get("meta", {}))
 
     # ---- 第二遍：解析 models ----
     CONFIGS = {}
@@ -160,6 +163,7 @@ if __name__ == "__main__":
     print(f"🤖 默认模型: {DEFAULT_MODEL}")
     print(f"📝 默认提示词: {DEFAULT_PROMPT or '(无)'}")
     print(f"📚 命名提示词库: {', '.join(PROMPTS.keys()) or '(空)'}")
+    print(f"🔧 元数据提取提示词: {', '.join(META.keys()) or '(空)'}")
     print(f"📋 共 {len(CONFIGS)} 个模型配置:\n")
     for name, cfg in CONFIGS.items():
         has_prompt = "✓" if cfg.get("prompt") else "—"

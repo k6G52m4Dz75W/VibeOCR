@@ -29,33 +29,8 @@ except ImportError:
 
 
 # ---- 提示词 ----
-
-PROMPT = """从图书的版权页图片提取文字，识别整理后直接返回以下2项数据，不要添加任何额外说明：
-
-第1项，符合电子书 EPUB 规范的 meta.yaml 元数据。根据以下模板和说明直接返回YAML的内容，第1项开始和结束用---标记：
----
-title: # 书名(若有副标题的话返回如下列表，否则直接返回书名）
-- type: main
-  text: # 书名
-- type: subtitle
-  text: # 副标题
-creator: # 作者（若作者姓名之间包含顿号、则作为不同的作者返回列表）
-- role: author
-  text: # 姓名
-identifier:
-  scheme: ISBN-13
-  text: 'urn:isbn:' # 'urn:isbn:去除-的13位书号'
-publisher: # 出版社
-date: # 出版日期，格式为YYYY-MM-DD，只有年份是必须的
-lang: zh-CN # 根据版权页语言判断书籍语言
-contributor:
-  - role: editor
-    text: # 编辑姓名（若有多位则返回列表）
-  - role: printer 
-    text: # 印制人员姓名（若有多位则返回列表）
----
-第2项，原始文本内容整理成的表格，左边是字段名，例如书名，作者等，右边是值，例如书的真正名字，作者的姓名等，表头留空，表格前面加上“# 出版信息”，直接返回给我符合markdown格式的文本。"""
-
+# 原提示词已抽离到 models_config.toml 的 [meta] 段（meta.prompt），
+# 运行时从 models_config.META 读取，便于直接修改而无需动此 .py。
 
 # ---- LLM 响应拆分 ----
 
@@ -172,11 +147,12 @@ def main():
         print(f"❌ 找不到: {input_path}")
         sys.exit(1)
 
-    # 从 llm_ocr 加载公共模块
+    # 从 llm_ocr / models_config 加载公共模块
     try:
         from llm_ocr import load_model_config, pdf_pages_to_b64, image_file_to_b64, call_llm
+        from models_config import META
     except ImportError as e:
-        print(f"❌ 请将 llm_ocr.py 放在同一目录下: {e}")
+        print(f"❌ 请将 llm_ocr.py / models_config.py 放在同一目录下: {e}")
         sys.exit(1)
 
     # 加载模型配置
@@ -202,10 +178,16 @@ def main():
         print("   支持的格式: .pdf .png .jpg .jpeg .webp .bmp .tiff")
         sys.exit(1)
 
-    # 调用 LLM
+    # 调用 LLM（提示词从 [meta] 段读取，便于外部修改）
+    meta_prompt = META.get("prompt")
+    if not meta_prompt:
+        print("❌ 未在 models_config.toml 的 [meta] 段找到 prompt")
+        print("   请检查 [meta] 段是否包含 prompt 字段")
+        sys.exit(1)
+
     print("🔍 分析元数据...")
     try:
-        raw_response = call_llm(config, images, PROMPT, verbose=False)
+        raw_response = call_llm(config, images, meta_prompt, verbose=False)
     except Exception as e:
         print(f"❌ LLM 调用失败: {e}")
         sys.exit(1)
