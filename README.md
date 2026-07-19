@@ -65,9 +65,9 @@ python VibeOCR.py --list-models
 python VibeOCR.py document.pdf
 
 # 使用指定模型
-python VibeOCR.py document.pdf --model nvidia_kimi
+python VibeOCR.py document.pdf --model nvidia_kimi-k2.6
 python VibeOCR.py document.pdf --model mineru_precision
-python VibeOCR.py document.pdf --model paddleocr_vl
+python VibeOCR.py document.pdf --model paddleocr-vl-1.6
 
 # 跳过指定后处理模块（默认启用去重，可用 -s 或 --skip 禁用）
 python VibeOCR.py document.pdf --skip dedup
@@ -90,7 +90,7 @@ python utils_clean_text.py input.txt output.txt -s dedup
 
 # EPUB 元数据 + 版权页提取（从版权页自动提取）
 python utils_extract_meta.py book.pdf                          # 输出到 PDF 同目录
-python utils_extract_meta.py book.pdf --model nvidia_kimi -o ./output  # 指定输出目录
+python utils_extract_meta.py book.pdf --model nvidia_kimi-k2.6 -o ./output  # 指定输出目录
 python utils_extract_meta.py book.pdf --dry-run --debug        # 预览 + 调试
 
 # 查看独立工具版本
@@ -105,25 +105,26 @@ python utils_extract_meta.py -v
 | 模型配置 Key | 适用场景 | 成本 | 精度 | 速度 |
 |-------------|---------|------|------|------|
 | `siliconflow_deepseek-ocr` | 普通书籍、小说 | 💰低 | ⭐⭐⭐ | ⚡快 |
+| `siliconflow_paddleocr-vl-1.5` | 普通书籍、图文混排 | 💰低 | ⭐⭐⭐ | ⚡快 |
 | `mineru_precision` | 高精度扫描件、复杂版式 | 💰中 | ⭐⭐⭐⭐⭐ | 🐢慢（异步） |
-| `paddleocr_vl` | 中文文档、古籍（Markdown输出） | 💰低 | ⭐⭐⭐⭐ | 🐢慢（异步） |
-| `paddleocr_v6` | 快速纯文本身份、简单版面 | 💰低 | ⭐⭐⭐ | 🐢慢（异步） |
-| `nvidia_kimi` | 中英文书籍、高通量 | 💰中 | ⭐⭐⭐⭐ | ⚡⚡快 |
+| `paddleocr-vl-1.6` | 中文文档、古籍（Markdown输出） | 💰低 | ⭐⭐⭐⭐ | 🐢慢（异步） |
+| `pp-ocrv6` | 快速纯文本身份、简单版面 | 💰低 | ⭐⭐⭐ | 🐢慢（异步） |
+| `nvidia_kimi-k2.6` | 中英文书籍、高通量 | 💰中 | ⭐⭐⭐⭐ | ⚡⚡快 |
 | `moonshot_kimi` | 中文长文档 | 💰中 | ⭐⭐⭐⭐ | ⚡快 |
-| `nvidia_nemotron` | 超大上下文需求 | 💰中 | ⭐⭐⭐ | ⚡⚡快 |
-| `openai_gpt4o` | 英文为主、稳定性优先 | 💰高 | ⭐⭐⭐⭐⭐ | ⚡快 |
-| `anthropic_claude` | 多语言、推理任务 | 💰高 | ⭐⭐⭐⭐⭐ | ⚡快 |
+| `nvidia_nemotron-3-nano` | 超大上下文需求 | 💰中 | ⭐⭐⭐ | ⚡⚡快 |
+| `gpt-4o` | 英文为主、稳定性优先 | 💰高 | ⭐⭐⭐⭐⭐ | ⚡快 |
+| `claude-sonnet-5` | 多语言、推理任务 | 💰高 | ⭐⭐⭐⭐⭐ | ⚡快 |
 
 > 💡 **新手上路推荐**: 从 `siliconflow_deepseek-ocr` 开始（免费额度/低成本），遇到复杂版式时切换到 `mineru_precision`
 
 ## 📁 输出文件说明
 
-处理 `book.pdf` 并使用 `nvidia_kimi` 模型时，输出：
+处理 `book.pdf` 并使用 `nvidia_kimi-k2.6` 模型时，输出：
 
 ```
-book_nvidia_kimi_raw.txt    ← 原始 API 返回（按批次分割）
-book_nvidia_kimi.txt        ← 后处理后的最终结果（推荐使用）
-book_nvidia_kimi.json       ← 异步模型的结构化 JSON 数据
+book_nvidia_kimi-k2.6_raw.txt    ← 原始 API 返回（按批次分割）
+book_nvidia_kimi-k2.6.txt        ← 后处理后的最终结果（推荐使用）
+book_nvidia_kimi-k2.6.json       ← 异步模型的结构化 JSON 数据
 ```
 
 ## 🧩 项目结构
@@ -200,12 +201,28 @@ python VibeOCR.py /path/to/book.pdf
 
 ## 📝 更新日志
 
+### v4.4.0 (2026-07-19) — "Peace cannot be kept by force. It can only be achieved by understanding."
+- **新增 SiliconFlow PaddleOCR-VL-1.5 模型**: 走 SiliconFlow 同步/流式端点（`model_id = "PaddlePaddle/PaddleOCR-VL-1.5"`），`prompt = ""` 与异步兄弟 `paddleocr-vl-1.6` 对齐（纯图像输入，原生 OCR 模型不需提示词）
+- **模型命名体系收敛（关键重构）**:
+  - `[models.paddleocr_v6]` → `[models."pp-ocrv6"]`，`content_format` 内部标识 `paddleocr_v6` 统一为 `pp-ocrv6`（VibeOCR.py 5 处 + 测试 + 文档同步）
+  - `openai_gpt4o` → `gpt-4o`、`anthropic_claude` → `claude-sonnet-5`：自产自托管省略公司名，段名 key 用 `model_id` 真名
+  - `nvidia_nemotron` → `nvidia_nemotron-3-nano`：保留 `nvidia_` 前缀作「托管在 NIM 云」标记，与 step / minimax / kimi 同族一致
+  - `utils_map_p_br.py` 格式串 `paddleocr_vl` → `paddleocr-vl-1.6`
+- **NVIDIA NIM 各段官方文档审计与对齐**:
+  - `nvidia_nemotron-3-nano`: 删除误粘的 `chat_template_kwargs = { enable_thinking = false }`（与 `reasoning_budget` 矛盾且非本模型参数）；`temperature` 0.1 → 0.6（对齐官方 Thinking mode）
+  - `nvidia_step-3.7-flash`: `temperature` 0.1 → 1.00（对齐 Build 页官方示例）
+  - `nvidia_minimax-m3`: 去掉段名冗余引号；删除 `chat_template_kwargs = { "thinking_mode": "disabled" }` 恢复默认开思考（推理模型开思考更准确）
+  - `nvidia_kimi-k2.6`: 补充 `seed = 0`（对齐官方示例，固定随机种子使输出可复现）
+  - `nvidia_qwen3.5` 已下架删除
+- **文档死引用修复**: README / SPEC / `utils_extract_meta.py` 中旧别名 `nvidia_kimi` → `nvidia_kimi-k2.6`（共 17 处），避免按文档运行找不到段
+- **MinerU 上传参数修正**: `is_ocr` 由顶层字段移入 `files[].is_ocr`，贴合 MinerU API 实际结构
+
 ### v4.3.1 (2026-07-17) — "A really great talent finds its happiness in execution."
 - **修复 本地免鉴权崩溃**: v4.3.0 虽声称 `lmstudio` 免 key 可运行，但空 `api_key` 仍会构造 `OpenAI(api_key="")` 触发 SDK 的 `Missing credentials` 异常。现改为**空 key 时强制走 `requests` 路径**（该路径用 `build_headers`，空 key 本就不发 `Authorization` 头），LM Studio 本地服务免鉴权真正可用
 - **补录历史发布格言**: 将 GitHub Releases 标题上已有的 4 句版本格言补入 README 对应更新日志小标题（v4.0 / v4.1 / v4.2 / v4.2.1），使文档与 Release 标题一致；后续发布将由自动化流程统一抽取并写入
 
 ### v4.3.0 (2026-07-17) — "The superior man is modest in his speech but exceeds in his actions."
-- **提示词去重**: 抽离 `[prompts]` 通用提示词库到文件最前，各模型用 `prompt_ref` 引用；异步 OCR 模型（`paddleocr_vl`/`paddleocr_v6`/`mineru_precision`）用 `prompt_ref = ""` 显式置空
+- **提示词去重**: 抽离 `[prompts]` 通用提示词库到文件最前，各模型用 `prompt_ref` 引用；异步 OCR 模型（`paddleocr-vl-1.6`/`pp-ocrv6`/`mineru_precision`）用 `prompt_ref = ""` 显式置空
 - **本地免鉴权模型**: 新增 `api_key_env = "none"` 约定（"none"/"no"/空 均视为免 key），`lmstudio` 等本地模型可无需 API Key 直接运行；`build_headers` 在无 key 时不发送 `Authorization` 头
 - **修复 TOML 点号 key bug**: `nvidia_kimi-k2.6`/`nvidia_glm-5.2`/`kimi-k2.6` 三个未加引号的点号 model key 此前被 TOML 错误解析为嵌套子表（模型名损坏），已统一改为带引号写法
 - `models_config.py` 改为两遍加载（先收集 `[prompts]`/`[defaults]`，再解析 `[models.*]`），外部 `--config` 可自带 `[prompts]` 合并/覆盖

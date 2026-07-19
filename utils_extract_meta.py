@@ -11,7 +11,7 @@ COPYRIGHT.md 直接截取原始 LLM 响应后保存，不走后处理流程。
 
 用法:
     python utils_extract_meta.py book.pdf
-    python utils_extract_meta.py book.pdf -m nvidia_kimi
+    python utils_extract_meta.py book.pdf -m nvidia_kimi-k2.6
     python utils_extract_meta.py cover.png --dry-run
     python utils_extract_meta.py -v
 """
@@ -122,7 +122,7 @@ def build_parser() -> argparse.ArgumentParser:
         epilog="""
 示例:
     python utils_extract_meta.py book.pdf
-    python utils_extract_meta.py book.pdf -m nvidia_kimi
+    python utils_extract_meta.py book.pdf -m nvidia_kimi-k2.6
     python utils_extract_meta.py book.pdf --dry-run
     python utils_extract_meta.py cover.png --debug
         """.strip(),

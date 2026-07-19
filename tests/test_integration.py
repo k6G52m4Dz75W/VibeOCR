@@ -52,7 +52,7 @@ def make_mineru_zip(md_content: str, json_content: dict | None = None) -> bytes:
     return buf.getvalue()
 
 
-def make_paddleocr_jsonl(results: list[dict], content_format: str = "paddleocr_vl") -> str:
+def make_paddleocr_jsonl(results: list[dict], content_format: str = "paddleocr-vl-1.6") -> str:
     """创建模拟的 PaddleOCR jsonl 响应"""
     lines = []
     for r in results:
@@ -103,7 +103,7 @@ SAMPLE_CONFIG_PADDLE = {
     "content_format": "paddleocr_async",
 }
 
-SAMPLE_CONFIG_PADDLE_V6 = {**SAMPLE_CONFIG_PADDLE, "model_key": "test_paddle_v6", "content_format": "paddleocr_v6"}
+SAMPLE_CONFIG_PADDLE_V6 = {**SAMPLE_CONFIG_PADDLE, "model_key": "test_paddle_v6", "content_format": "pp-ocrv6"}
 
 
 # ======================================================================
@@ -532,7 +532,7 @@ class TestPaddleOCRV6AsyncFlow:
                     {"text": "第三段文字"},
                 ]
             },
-        ], content_format="paddleocr_v6")
+        ], content_format="pp-ocrv6")
 
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -553,7 +553,7 @@ class TestPaddleOCRV6AsyncFlow:
 
         jsonl_lines = make_paddleocr_jsonl([
             {"ocrResults": [{"text": "v6提取文本。"}]},
-        ], content_format="paddleocr_v6")
+        ], content_format="pp-ocrv6")
 
         mock_submit = MagicMock()
         mock_submit.status_code = 200
@@ -602,7 +602,7 @@ class TestPaddleOCRV6AsyncFlow:
             texts = ["v6结果1", "v6结果2"]
             json_data = [{"page_index": 0, "result": {}}, {"page_index": 1, "result": {}}]
 
-            save_async_results(texts, json_data, SAMPLE_CONFIG_PADDLE_V6, pdf_path, "paddleocr_v6")
+            save_async_results(texts, json_data, SAMPLE_CONFIG_PADDLE_V6, pdf_path, "pp-ocrv6")
 
             basename = os.path.splitext(pdf_path)[0]
             assert os.path.exists(f"{basename}_{SAMPLE_CONFIG_PADDLE_V6['model_key']}.json")

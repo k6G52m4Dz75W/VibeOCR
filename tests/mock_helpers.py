@@ -223,7 +223,7 @@ def make_mineru_zip(md_content: str, json_content: dict | None = None) -> bytes:
 
 def make_paddleocr_jsonl(
     results: list[dict],
-    content_format: str = "paddleocr_vl",
+    content_format: str = "paddleocr-vl-1.6",
 ) -> str:
     """
     创建模拟的 PaddleOCR jsonl 响应。
@@ -301,7 +301,7 @@ SAMPLE_CONFIG_PADDLE = {
 SAMPLE_CONFIG_PADDLE_V6 = {
     **SAMPLE_CONFIG_PADDLE,
     "model_key": "test_paddle_v6",
-    "content_format": "paddleocr_v6",
+    "content_format": "pp-ocrv6",
 }
 
 

@@ -239,7 +239,7 @@ def run_paddleocr_async(config: dict[str, Any], file_path: str) -> tuple[list[st
     根据 config.content_format 自动选择解析方式"""
     job_id = paddleocr_submit_job(config, file_path)
     jsonl_url = paddleocr_poll_job(config, job_id)
-    if config["content_format"] == "paddleocr_v6":
+    if config["content_format"] == "pp-ocrv6":
         return paddleocr_v6_fetch_results(jsonl_url)
     return paddleocr_fetch_results(jsonl_url)
 
@@ -261,10 +261,12 @@ def mineru_get_upload_url(config: dict[str, Any], file_path: str, max_retries: i
 
     data = {
         "files": [
-            {"name": file_name}
+            {
+                "name": file_name,
+                "is_ocr": template.get("is_ocr", True),
+            }
         ],
         "model_version": template.get("model_version", "vlm"),
-        "is_ocr": template.get("is_ocr", True),
         "enable_formula": template.get("enable_formula", True),
         "enable_table": template.get("enable_table", True),
         "language": template.get("language", "ch"),
@@ -500,7 +502,7 @@ def save_async_results(all_texts: list[str], all_json_data: list[dict[str, Any]]
     with open(raw_out, "w", encoding="utf-8") as f:
         for i, text in enumerate(all_texts):
             f.write(f"\n{'='*60}\n")
-            if content_format in ("paddleocr_async", "paddleocr_v6"):
+            if content_format in ("paddleocr_async", "pp-ocrv6"):
                 f.write(f"第 {i+1} 条 (共 {len(all_texts)} 条)\n")
             else:
                 f.write(f"结果 {i+1} (共 {len(all_texts)} 个)\n")
@@ -519,7 +521,7 @@ def save_async_results(all_texts: list[str], all_json_data: list[dict[str, Any]]
         f.write(full_text)
 
     print(f"\n✅ 完成！总计 {len(full_text)} 字符 → {out}")
-    if content_format in ("paddleocr_async", "paddleocr_v6"):
+    if content_format in ("paddleocr_async", "pp-ocrv6"):
         print(f"   共处理 {len(all_texts)} 条结果")
 
 
@@ -570,7 +572,7 @@ def run_async_ocr(config: dict[str, Any], pdf_path: str) -> tuple[list[str], lis
     """运行异步 OCR 任务，返回 (all_texts, all_json_data)"""
     content_format = config["content_format"]
 
-    if content_format in ("paddleocr_async", "paddleocr_v6"):
+    if content_format in ("paddleocr_async", "pp-ocrv6"):
         label = "PaddleOCR-VL-1.6" if content_format == "paddleocr_async" else "PP-OCRv6"
         print(f"🔧 {label} 异步任务模式")
         print("   直接上传PDF文件，无需预先转图片\n")
@@ -679,7 +681,7 @@ def main() -> None:
     config = load_model_config(args.model)
     skip_args = parse_skip_args(args.skip)
     content_format = config.get("content_format", "openai")
-    is_async = content_format in ("paddleocr_async", "paddleocr_v6", "mineru_async")
+    is_async = content_format in ("paddleocr_async", "pp-ocrv6", "mineru_async")
 
     # 打印概要信息
     print(f"📄 处理: {pdf_path}")

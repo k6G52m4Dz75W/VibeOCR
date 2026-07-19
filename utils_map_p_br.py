@@ -32,7 +32,7 @@ def detect_format(data) -> tuple:
                 pruned = lr.get("prunedResult")
                 if pruned:
                     pages.append(pruned)
-        return pages, "new_format (paddleocr_vl)"
+        return pages, "new_format (paddleocr-vl-1.6)"
 
     if isinstance(data, list):
         pages = []
