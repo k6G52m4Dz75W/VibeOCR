@@ -115,13 +115,13 @@ python utils_extract_meta.py -v
 | `nvidia_nemotron-3-nano` | 💰 | ⭐⭐⭐ |
 | `kimi-k2.6` | 💰💰💰💰 | ⭐⭐⭐⭐⭐ |
 | `kimi-k3` | 💰💰💰💰💰 | ⭐⭐⭐⭐⭐ |
-| `gpt-4o` | 💰💰💰💰 | ⭐⭐⭐⭐ |
+| `gpt-4o` | 💰💰💰💰💰 | ⭐⭐⭐⭐ |
 | `claude-sonnet-5` | 💰💰💰💰💰 | — |
 | `lmstudio` | 💰💰 | ⭐⭐⭐ |
 
 > 💡 `claude-sonnet-5` 精度尚未实测，留待后续验证。
 
-> 💡 **新手上路推荐**: 从 `siliconflow_deepseek-ocr` 开始（免费额度/低成本），遇到复杂版式时切换到 `mineru_precision`
+> 💡 **新手上路推荐**: `mineru_precision` （默认模型）
 
 ## 📁 输出文件说明
 

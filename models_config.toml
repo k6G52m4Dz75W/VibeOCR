@@ -50,7 +50,7 @@ Requirements:
 # ============================================================
 
 [defaults]
-default_model = "siliconflow_deepseek-ocr"
+default_model = "mineru_precision"
 default_prompt = "default"
 
 # ============================================================
