@@ -104,8 +104,8 @@ python utils_extract_meta.py -v
 
 | 模型 | 成本 | 精度 |
 |-------------|------|------|
-| <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_deepseek-ocr` ⚠️ | 💰 | — |
-| <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_paddleocr-vl-1.5` ⚠️ | 💰 | — |
+| <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_deepseek-ocr` | 💰 | ⚠️ |
+| <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_paddleocr-vl-1.5` | 💰 | ⚠️ |
 | <img src="https://www.google.com/s2/favicons?domain=mineru.net&sz=32" width="16" alt="MinerU"> `mineru_precision` | 💰 | ⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=paddleocr.ai&sz=32" width="16" alt="PaddleOCR"> `paddleocr-vl-1.6` | 💰 | ⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=paddleocr.ai&sz=32" width="16" alt="PaddleOCR"> `pp-ocrv6` | 💰 | ⭐⭐⭐ |
