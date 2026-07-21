@@ -23,6 +23,7 @@ try:
     from llm_ocr import (
         load_model_config,
         pdf_pages_to_b64,
+    pdf_pages_to_pdf_b64,
         build_payload,
         build_headers,
         ocr_batch,
@@ -593,9 +594,14 @@ def run_llm_ocr(config: dict[str, Any], pdf_path: str, skip: list[str] | None = 
     batch_size = config.get("batch_size", 1)
     basename = os.path.splitext(pdf_path)[0]
 
-    # PDF转图片
-    print("🔧 PDF转图片...")
-    all_images, total_pages = pdf_pages_to_b64(pdf_path)
+    # 输入模式分流：原生支持 PDF 的模型直传每页 PDF，否则栅格化为图片
+    input_mode = config.get("input_mode", "image")
+    if input_mode == "pdf":
+        print("📄 逐页直传原生 PDF（input_mode=pdf）...")
+        all_blocks, total_pages = pdf_pages_to_pdf_b64(pdf_path)
+    else:
+        print("🔧 PDF 转图片（input_mode=image）...")
+        all_blocks, total_pages = pdf_pages_to_b64(pdf_path)
     print(f"\n🚀 开始OCR（共{total_pages}页）...")
 
     # 分批运行OCR
@@ -603,7 +609,7 @@ def run_llm_ocr(config: dict[str, Any], pdf_path: str, skip: list[str] | None = 
     step = batch_size
     for start in range(0, total_pages, step):
         end = min(start + batch_size, total_pages)
-        batch_images = all_images[start:end]
+        batch_images = all_blocks[start:end]
         batch_info = f"第{start+1}-{end}页 (共{total_pages}页)"
         print(f"\n📦 批次 {len(all_texts)+1}: {batch_info}")
 

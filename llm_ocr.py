@@ -163,6 +163,56 @@ def image_file_to_b64(image_path: str, max_width: int = 1600) -> list[dict[str, 
     }]
 
 
+def pdf_pages_to_pdf_b64(pdf_path: str, page_range: str | None = None) -> tuple[list[dict[str, Any]], int]:
+    """
+    将 PDF 每页拆分独立 PDF，返回 data:application/pdf;base64 内容块列表。
+
+    供原生支持 PDF 输入的模型（如 DeepSeek-OCR / deepseek-ocr）使用：
+    直接把每一页的 PDF 原始字节传给模型，而非先栅格化成图片，
+    可保留模型训练时所依赖的版面/矢量结构信息，缓解栅格化导致的乱码。
+
+    消息格式与栅格化一致（仍是 type=image_url / image_url.url），
+    仅 data URI 的 MIME 由 image/png 换成 application/pdf，
+    下游 call_llm / ocr_batch 无需改动即可复用。
+
+    Returns:
+        (blocks, total_pages) — blocks 是 OpenAI 兼容的内容块列表，
+        每个块形如 {"type":"image_url","image_url":{"url":"data:application/pdf;base64,..."}}
+    """
+    doc = fitz.open(pdf_path)
+    total = len(doc)
+
+    if page_range:
+        if "-" in page_range:
+            parts = page_range.split("-")
+            start = max(0, int(parts[0]) - 1)
+            end = min(int(parts[1]), total)
+        else:
+            start = max(0, int(page_range) - 1)
+            end = start + 1
+    else:
+        start = 0
+        end = total
+
+    blocks = []
+    for i in range(start, end):
+        new_doc = fitz.open()
+        new_doc.insert_pdf(doc, from_page=i, to_page=i)
+        pdf_bytes = new_doc.tobytes()
+        new_doc.close()
+        b64 = base64.b64encode(pdf_bytes).decode()
+        blocks.append({
+            "type": "image_url",
+            "image_url": {"url": "data:application/pdf;base64," + b64},
+        })
+        size_kb = len(pdf_bytes) / 1024
+        total_info = f" (共{total}页)" if total > 1 else ""
+        print(f"  第{i+1}/{total}页已编码为PDF ({int(size_kb)}KB){total_info}")
+
+    doc.close()
+    return blocks, end - start
+
+
 # ======================================================================
 # 请求构建
 # ======================================================================

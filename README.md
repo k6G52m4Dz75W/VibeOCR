@@ -104,8 +104,8 @@ python utils_extract_meta.py -v
 
 | 模型 | 成本 | 精度 |
 |-------------|------|------|
-| <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_deepseek-ocr` | 💰 | ⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_paddleocr-vl-1.5` | 💰 | ⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_deepseek-ocr` ⚠️ | 💰 | ⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_paddleocr-vl-1.5` ⚠️ | 💰 | ⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=mineru.net&sz=32" width="16" alt="MinerU"> `mineru_precision` | 💰 | ⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=paddleocr.ai&sz=32" width="16" alt="PaddleOCR"> `paddleocr-vl-1.6` | 💰 | ⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=paddleocr.ai&sz=32" width="16" alt="PaddleOCR"> `pp-ocrv6` | 💰 | ⭐⭐⭐ |
@@ -122,6 +122,8 @@ python utils_extract_meta.py -v
 > 💡 `claude-sonnet-5` 精度尚未实测，留待后续验证。
 
 > 💡 **新手上路推荐**: `mineru_precision` （默认模型）
+
+> ⚠️ **SiliconFlow 托管模型（`siliconflow_deepseek-ocr` / `siliconflow_paddleocr-vl-1.5`）结果可能不稳定**：实测运行中会随机混入无关文本或乱码（如试卷题目列表），而从官方 API（百度 aistudio / 官方 DeepSeek-OCR）跑同一输入完全正常。推断为 SiliconFlow 上第三方上传的权重副本退化或多租户串扰所致，与本项目代码无关。仅建议作为低成本备选，**勿用于生产 OCR 主线**；稳定精度请走百度 aistudio 的 `paddleocr-vl-1.6`/`pp-ocrv6` 或官方 DeepSeek-OCR API。
 
 ## 📁 输出文件说明
 
