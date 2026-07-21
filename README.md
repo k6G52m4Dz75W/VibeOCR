@@ -123,7 +123,7 @@ python utils_extract_meta.py -v
 
 > 💡 **新手上路推荐**: `mineru_precision` （默认模型）
 
-> ⚠️ **SiliconFlow 托管模型（`siliconflow_deepseek-ocr` / `siliconflow_paddleocr-vl-1.5`）结果可能不稳定**：实测运行中会随机混入无关文本或乱码（如试卷题目列表），而从官方 API（百度 aistudio / 官方 DeepSeek-OCR）跑同一输入完全正常。推断为 SiliconFlow 上第三方上传的权重副本退化或多租户串扰所致，与本项目代码无关。仅建议作为低成本备选，**勿用于生产 OCR 主线**；稳定精度请走百度 aistudio 的 `paddleocr-vl-1.6`/`pp-ocrv6` 或官方 DeepSeek-OCR API。
+> ⚠️ **SiliconFlow 托管模型（`siliconflow_deepseek-ocr` / `siliconflow_paddleocr-vl-1.5`）结果可能不稳定**：实测运行中会随机混入无关文本或乱码（如试卷题目列表），而从官方 API（百度 aistudio / 官方 DeepSeek-OCR）跑同一输入完全正常。推断为 SiliconFlow 上第三方上传的权重副本退化或多租户串扰所致，与本项目代码无关。仅建议作为低成本备选，**勿用于生产 OCR 主线**；稳定精度请走 `mineru_precision` 或 `paddleocr-vl-1.6`/`pp-ocrv6`。
 
 ## 📁 输出文件说明
 

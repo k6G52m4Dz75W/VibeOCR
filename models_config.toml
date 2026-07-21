@@ -100,7 +100,7 @@ timeout = 120
 content_format = "openai"
 # 仅 DeepSeek-OCR 在 SiliconFlow(vLLM) 上独享 application/pdf 原生处理；其余 SiliconFlow VLM 仅吃图片。
 input_mode = "pdf"
-note = "DeepSeek-OCR 经 SiliconFlow(vLLM) 在线服务，input_mode=pdf 直接传每页原生 PDF（保留版面/矢量结构，缓解栅格化乱码）。skip_special_tokens=false 保留 <td>/</td>；vllm_xargs 的 ngram 处理器+白名单(表格行标签)防退化。max_tokens 实测 4096 可用，8192 在 SiliconFlow 报错。⚠️ 注意：本 SiliconFlow 托管副本偶发输出被无关文本/乱码干扰（疑似第三方上传权重退化或多租户串扰），结果不稳定，生产 OCR 建议改走官方 DeepSeek-OCR API。"
+note = "DeepSeek-OCR 经 SiliconFlow(vLLM) 在线服务，input_mode=pdf 直接传每页原生 PDF（保留版面/矢量结构，缓解栅格化乱码）。skip_special_tokens=false 保留 <td>/</td>；vllm_xargs 的 ngram 处理器+白名单(表格行标签)防退化。max_tokens 实测 4096 可用，8192 在 SiliconFlow 报错。⚠️ 注意：本 SiliconFlow 托管副本偶发输出被无关文本/乱码干扰（疑似第三方上传权重退化或多租户串扰），结果不稳定，生产 OCR 建议改走 mineru_precision 或 paddleocr-vl-1.6/pp-ocrv6。"
 prompt = """
 <image>\nFree OCR. 
 """
@@ -128,7 +128,7 @@ content_format = "openai"
 # 不支持 application/pdf 数据 URI（那是 DeepSeek-OCR 在 SiliconFlow 的独享特判）。
 # 原生 PDF 能力属于百度 aistudio 的 PaddleOCR-VL API(fileType=0)，非本 chat 端点，故保持图片模式。
 input_mode = "image"
-note = "总上下文限制8K，max_tokens建议不超过4096。⚠️ 注意：本 SiliconFlow 托管副本偶发输出被无关文本/乱码干扰（疑似第三方上传权重退化或多租户串扰），结果不稳定，生产 OCR 建议改走百度 aistudio 官方 PaddleOCR-VL/PP-OCRv6。"
+note = "总上下文限制8K，max_tokens建议不超过4096。⚠️ 注意：本 SiliconFlow 托管副本偶发输出被无关文本/乱码干扰（疑似第三方上传权重退化或多租户串扰），结果不稳定，生产 OCR 建议改走 mineru_precision 或 paddleocr-vl-1.6/pp-ocrv6。"
 prompt = ""
 
 [models."siliconflow_paddleocr-vl-1.5".headers]
