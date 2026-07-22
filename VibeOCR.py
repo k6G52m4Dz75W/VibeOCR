@@ -192,7 +192,7 @@ def paddleocr_v6_fetch_results(jsonl_url: str) -> tuple[list[str], list[dict[str
     """下载并解析 PP-OCRv6 jsonl 结果，返回 (文本列表, 原始json数据列表)
     
     PP-OCRv6 结果与 PaddleOCR-VL 使用相同 jsonl 格式，但字段结构不同：
-    - PP-OCRv6: result.ocrResults[].text + .ocrImage
+    - PP-OCRv6: result.ocrResults[].prunedResult.rec_texts (每页一个行文本数组)
     - PaddleOCR-VL: result.layoutParsingResults[].markdown.text
     """
     print(f"📥 下载结果: {jsonl_url}")
@@ -220,9 +220,12 @@ def paddleocr_v6_fetch_results(jsonl_url: str) -> tuple[list[str], list[dict[str
             all_json_data.append(page_data)
 
             # 解析 PP-OCRv6 的 ocrResults 结构
+            # 实际返回: result.ocrResults[].prunedResult.rec_texts (每行一条字符串)
             ocr_results = result.get("ocrResults", [])
             for res in ocr_results:
-                text = res.get("text", "")
+                pruned = res.get("prunedResult", {})
+                rec_texts = pruned.get("rec_texts", [])
+                text = "\n".join(t for t in rec_texts if isinstance(t, str))
                 if text.strip():
                     all_texts.append(text)
                 page_num += 1

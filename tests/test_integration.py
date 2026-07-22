@@ -523,13 +523,12 @@ class TestPaddleOCRV6AsyncFlow:
         jsonl_lines = make_paddleocr_jsonl([
             {
                 "ocrResults": [
-                    {"text": "第一段文字"},
-                    {"text": "第二段文字"},
+                    {"prunedResult": {"rec_texts": ["第一段文字", "第二段文字"]}},
                 ]
             },
             {
                 "ocrResults": [
-                    {"text": "第三段文字"},
+                    {"prunedResult": {"rec_texts": ["第三段文字"]}},
                 ]
             },
         ], content_format="pp-ocrv6")
@@ -541,10 +540,10 @@ class TestPaddleOCRV6AsyncFlow:
         with patch("requests.get", return_value=mock_resp):
             texts, json_data = paddleocr_v6_fetch_results("https://test.jsonl")
 
-        assert len(texts) == 3
+        assert len(texts) == 2
         assert "第一段文字" in texts[0]
-        assert "第二段文字" in texts[1]
-        assert "第三段文字" in texts[2]
+        assert "第二段文字" in texts[0]
+        assert "第三段文字" in texts[1]
         assert len(json_data) == 2
 
     def test_v6_full_flow(self):
@@ -552,7 +551,7 @@ class TestPaddleOCRV6AsyncFlow:
         from VibeOCR import run_paddleocr_async
 
         jsonl_lines = make_paddleocr_jsonl([
-            {"ocrResults": [{"text": "v6提取文本。"}]},
+            {"ocrResults": [{"prunedResult": {"rec_texts": ["v6提取文本。"]}}]},
         ], content_format="pp-ocrv6")
 
         mock_submit = MagicMock()
