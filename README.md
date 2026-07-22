@@ -106,13 +106,13 @@ python utils_extract_meta.py -v
 |-------------|------|------|
 | <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_deepseek-ocr` | 💰 | ⚠️ |
 | <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_paddleocr-vl-1.5` | 💰 | ⚠️ |
-| <img src="https://www.google.com/s2/favicons?domain=mineru.net&sz=32" width="16" alt="MinerU"> `mineru_precision` | 💰 | ⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=mineru.net&sz=32" width="16" alt="MinerU"> `mineru_precision` | 💰 | ⭐⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=paddleocr.ai&sz=32" width="16" alt="PaddleOCR"> `paddleocr-vl-1.6` | 💰 | ⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=paddleocr.ai&sz=32" width="16" alt="PaddleOCR"> `pp-ocrv6` | 💰 | ⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_kimi-k2.6` | 💰 | ⭐⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_minimax-m3` | 💰 | ⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_step-3.7-flash` | 💰 | ⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_nemotron-3-nano` | 💰 | ⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_nemotron-3-nano` | 💰 | ⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=kimi.com&sz=32" width="16" alt="Moonshot AI"> `kimi-k2.6` | 💰💰💰💰 | ⭐⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=kimi.com&sz=32" width="16" alt="Moonshot AI"> `kimi-k3` | 💰💰💰💰💰 | ⭐⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=openai.com&sz=32" width="16" alt="OpenAI"> `gpt-4o` | 💰💰💰💰💰 | ⭐⭐⭐⭐ |
