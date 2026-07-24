@@ -306,7 +306,9 @@ def call_llm(
     else:
         messages = [{"role": "user", "content": message_content}]
 
-    can_use_openai = OPENAI_AVAILABLE and fmt == "openai" and api_key
+    # 注意：SDK 路径资格不依赖 api_key —— 本地 vLLM 等无需鉴权的
+    # OpenAI 兼容服务也该走 SDK（能正确经 extra_body 透传 vllm_xargs 等）
+    can_use_openai = OPENAI_AVAILABLE and fmt == "openai"
 
     last_error = None
     for attempt in range(1, max_retries + 1):
@@ -315,9 +317,11 @@ def call_llm(
         try:
             if can_use_openai:
                 base_url = api_url.replace("/chat/completions", "")
-                client = OpenAI(api_key=api_key, base_url=base_url)
-                sdk_payload = {"model": model_id, "messages": messages,
-                               "stream": False, **template}
+                # 本地 vLLM 等无需鉴权的 OpenAI 兼容服务：用占位 key（服务端忽略）
+                client = OpenAI(api_key=api_key or "not-needed", base_url=base_url)
+                sdk_payload = {"model": model_id, "messages": messages, **template}
+                # call_llm 是「返回完整文本」的辅助函数，强制非流式
+                sdk_payload["stream"] = False
                 kwargs, extra = _split_sdk_params(sdk_payload)
                 if extra:
                     kwargs["extra_body"] = extra
@@ -395,7 +399,9 @@ def ocr_batch(config: dict[str, Any], images: list[dict[str, Any]],
     use_stream = payload.get("stream", False)
 
     base_url = api_url.replace("/chat/completions", "")
-    can_use_openai = OPENAI_AVAILABLE and fmt == "openai" and config["api_key"]
+    # 注意：SDK 路径资格不依赖 api_key —— 本地 vLLM 等无需鉴权的
+    # OpenAI 兼容服务也该走 SDK
+    can_use_openai = OPENAI_AVAILABLE and fmt == "openai"
 
     last_error = None
     for attempt in range(1, max_retries + 1):
@@ -403,7 +409,8 @@ def ocr_batch(config: dict[str, Any], images: list[dict[str, Any]],
         print(f"  发送请求 [{lib_name}] (尝试 {attempt}/{max_retries}, stream={use_stream})...")
         try:
             if can_use_openai:
-                client = OpenAI(api_key=config["api_key"], base_url=base_url)
+                # 本地 vLLM 等无需鉴权的 OpenAI 兼容服务：用占位 key（服务端忽略）
+                client = OpenAI(api_key=config.get("api_key") or "not-needed", base_url=base_url)
                 kwargs, extra = _split_sdk_params(payload)
                 if extra:
                     kwargs["extra_body"] = extra

@@ -404,6 +404,34 @@ top_p = 1.0
 stream = true
 
 # ============================================================
+# vLLM本地模型
+# ============================================================
+
+[models.vllm_deepseek-ocr]
+name = "vLLM - DeepSeek-OCR"
+api_url = "http://127.0.0.1:8000/v1/chat/completions"
+model_id = "DeepSeek-OCR"
+api_key_env = "none"
+batch_size = 1
+timeout = 120
+content_format = "openai"
+input_mode = "image"
+prompt = """
+<image>\n<|grounding|>Convert the document to markdown.
+"""
+
+[models.vllm_deepseek-ocr.headers]
+Accept = "text/event-stream"
+Content-Type = "application/json"
+
+[models.vllm_deepseek-ocr.payload_template]
+max_tokens = 4096
+temperature = 0.0
+stream = true
+skip_special_tokens = false
+vllm_xargs = { ngram_size = 30, window_size = 90, whitelist_token_ids = [128821, 128822] }
+
+# ============================================================
 # 自定义模板（供用户复制使用）
 # ============================================================
 

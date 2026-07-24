@@ -607,3 +607,84 @@ class TestPaddleOCRV6AsyncFlow:
             assert os.path.exists(f"{basename}_{SAMPLE_CONFIG_PADDLE_V6['model_key']}.json")
             assert os.path.exists(f"{basename}_{SAMPLE_CONFIG_PADDLE_V6['model_key']}_raw.txt")
             assert os.path.exists(f"{basename}_{SAMPLE_CONFIG_PADDLE_V6['model_key']}.txt")
+
+
+class TestLocalOpenAICompatRouting:
+    """回归：本地无 key 的 OpenAI 兼容服务（如 vLLM）必须走 SDK 而非 requests。
+
+    根因：call_llm / ocr_batch 曾用 `... and api_key` 作为 SDK 路径开关，
+    导致本地 vLLM（api_key_env=none → 空 key）被强制走裸 requests.post。
+    """
+
+    def _local_cfg(self, with_stream: bool = False) -> dict:
+        tpl = {"max_tokens": 4096, "temperature": 0.0}
+        if with_stream:
+            tpl["stream"] = True
+        return {
+            "name": "Local vLLM",
+            "api_url": "http://127.0.0.1:8000/v1/chat/completions",
+            "model_id": "DeepSeek-OCR",
+            "api_key_env": "none",
+            "api_key": "",  # 本地服务无 key
+            "model_key": "vllm_deepseek_ocr",
+            "batch_size": 1,
+            "timeout": 120,
+            "content_format": "openai",
+            "headers": {},
+            "prompt": "extract",
+            "payload_template": tpl,
+        }
+
+    def test_ocr_batch_routes_to_sdk(self):
+        from llm_ocr import ocr_batch
+
+        cfg = self._local_cfg()
+        fake_msg = SAMPLE_IMAGE_DICT
+
+        mock_resp = MagicMock()
+        mock_resp.choices = [MagicMock()]
+        mock_resp.choices[0].message.content = "识别结果文本"
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = mock_resp
+        mock_openai = MagicMock(return_value=mock_client)
+
+        with (
+            patch("llm_ocr.OpenAI", mock_openai),
+            patch("llm_ocr.requests.post", side_effect=AssertionError("不应走 requests 路径")),
+        ):
+            text = ocr_batch(cfg, [fake_msg], "批次1")
+
+        assert text == "识别结果文本"
+        mock_openai.assert_called_once()
+        # 占位 key，而非空（避免 SDK 因空 key 报错）
+        _, kwargs = mock_openai.call_args
+        assert kwargs.get("api_key") == "not-needed"
+        mock_client.chat.completions.create.assert_called_once()
+
+    def test_call_llm_routes_to_sdk(self):
+        from llm_ocr import call_llm
+
+        cfg = self._local_cfg(with_stream=True)  # 即使 TOML 设了 stream=true
+        fake_img = {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAA"}}
+
+        mock_resp = MagicMock()
+        mock_resp.choices = [MagicMock()]
+        mock_resp.choices[0].message.content = "单页结果"
+
+        mock_client = MagicMock()
+        mock_client.chat.completions.create.return_value = mock_resp
+        mock_openai = MagicMock(return_value=mock_client)
+
+        with (
+            patch("llm_ocr.OpenAI", mock_openai),
+            patch("llm_ocr.requests.post", side_effect=AssertionError("不应走 requests 路径")),
+        ):
+            text = call_llm(cfg, [fake_img], "prompt")
+
+        assert text == "单页结果"
+        mock_openai.assert_called_once()
+        # call_llm 是「返回完整文本」辅助函数，必须强制非流式
+        _, kwargs = mock_openai.call_args
+        create_kwargs = mock_client.chat.completions.create.call_args[1]
+        assert create_kwargs.get("stream") is False
