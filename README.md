@@ -8,7 +8,7 @@
 
 ## 🌟 简介
 
-**VibeOCR** 是一个由 AI 驱动的端到端书籍光学字符识别（OCR）工具，可将扫描版 PDF 或图片中的文字提取为干净的纯文本。它支持从 DeepSeek-OCR、GPT-4o、Claude、Kimi、PaddleOCR-VL、PP-OCRv6、MinerU 到本地私有化部署（LM Studio / vLLM 等 OpenAI 兼容推理后端）的多种模型，可按精度与成本灵活切换；本地推理数据不出本机、无需云端 API Key。
+**VibeOCR** 是一个由 AI 驱动的端到端书籍光学字符识别（OCR）工具。它可以将扫描版 PDF 或图片中的文字提取为干净的纯文本。支持涵盖各种主流云端大模型（包括 MinerU、PaddleOCR-VL、PP-OCRv6、Kimi、DeepSeek-OCR、GPT-4o、Claude 等）乃至本地私有化部署（LM Studio / vLLM 等 OpenAI 兼容推理后端）的多种模型，可按精度与成本灵活切换；本地推理数据不出本机、无需云端 API Key。
 
 ### 核心特性
 
