@@ -135,7 +135,7 @@ python utils_extract_meta.py -v
 
 ### ⚡ vLLM
 
-- ![DeepSeek](https://www.google.com/s2/favicons?domain=deepseek.com&sz=32) [**DeepSeek-OCR**](https://github.com/deepseek-ai/DeepSeek-OCR) - [DeepSeek-OCR Windows WSL本地安装部署指南](./DeepSeek-OCR/DeepSeek-OCR_Local_Installation_and_Deployment_Guide_for_Windows_WSL.md)
+- ![DeepSeek](https://www.google.com/s2/favicons?domain=deepseek.com&sz=16) [**DeepSeek-OCR**](https://github.com/deepseek-ai/DeepSeek-OCR) - [DeepSeek-OCR Windows WSL本地安装部署指南](./DeepSeek-OCR/DeepSeek-OCR_Local_Installation_and_Deployment_Guide_for_Windows_WSL.md)
 
 > 🚀 **视界先锋（Visual Frontier）**：我的另一个项目，专注于本地大模型与多模态应用的部署实践。欢迎 Star / 关注 👉 [github.com/k6G52m4Dz75W/VisualFrontier](https://github.com/k6G52m4Dz75W/VisualFrontier)
 
