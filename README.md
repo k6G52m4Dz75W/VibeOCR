@@ -118,6 +118,7 @@ python utils_extract_meta.py -v
 | <img src="https://www.google.com/s2/favicons?domain=openai.com&sz=32" width="16" alt="OpenAI"> `gpt-4o` | 💰💰💰💰💰 | ⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=anthropic.com&sz=32" width="16" alt="Anthropic"> `claude-sonnet-5` | 💰💰💰💰💰 | — |
 | <img src="https://www.google.com/s2/favicons?domain=lmstudio.ai&sz=32" width="16" alt="LM Studio"> `lmstudio` | 💰💰 | ⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=deepseek.com&sz=32" width="16" alt="DeepSeek"> `vllm_deepseek-ocr` | 💰💰💰 | ⭐⭐⭐ |
 
 > 💡 `claude-sonnet-5` 精度尚未实测，留待后续验证。
 
@@ -145,7 +146,7 @@ VibeOCR/
 ├── .gitignore                 # Git 忽略规则
 ├── requirements.txt           # Python 依赖清单（pip install -r requirements.txt）
 ├── models_config.py           # 模型配置加载器（从 TOML 读取）
-├── models_config.toml         # 模型配置（TOML，14 个内置模型，支持热插拔）
+├── models_config.toml         # 模型配置（TOML，15 个内置模型，支持热插拔）
 ├── postprocess.py             # 后处理流水线入口
 ├── module_cleaning.py         # 文本清理（标签/空行/空白）
 ├── module_punctuation.py      # 英文标点 → 中文全角
@@ -206,7 +207,7 @@ python VibeOCR.py /path/to/book.pdf
 
 | 状态 | 内容 |
 |------|------|
-| ✅ 可用 | 核心 OCR 功能、14 种模型（TOML 配置热插拔，提示词抽离到 `[prompts]`，支持本地免鉴权模型）、批处理、后处理、EPUB 元数据 + 版权页提取 |
+| ✅ 可用 | 核心 OCR 功能、15 种模型（TOML 配置热插拔，提示词抽离到 `[prompts]`，支持本地免鉴权模型）、批处理、后处理、EPUB 元数据 + 版权页提取 |
 
 ## 📝 更新日志
 
