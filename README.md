@@ -214,6 +214,14 @@ python VibeOCR.py /path/to/book.pdf
 
 ## 📝 更新日志
 
+### v4.6.0 (2026-07-24) — "Character is like a tree and reputation like a shadow. The shadow is what we think of it; the tree is the real thing."
+- **本地大模型支持（vLLM）**: 新增 `vllm_deepseek-ocr`（本地 OpenAI 兼容、免鉴权、input_mode=image，含 vllm_xargs / skip_special_tokens / stream 透传）
+- **SDK 路由修复**: `call_llm` / `ocr_batch` 的 OpenAI SDK 路径资格判定去除 `api_key` 依赖，本地无 key 的 OpenAI 兼容服务（如 vLLM）也能正确走 SDK（经 extra_body 透传 vllm_xargs 等），新增回归测试（pytest 101 passed）
+- **SiliconFlow 托管模型标注**: `siliconflow_deepseek-ocr` 与 `siliconflow_paddleocr-vl-1.5` 在模型选择指南加 ⚠️ 不稳定标记与注意事项段（结果可能受干扰、偶发无关文本，根因在第三方托管副本而非本项目代码），并统一推荐改用内置 `mineru_precision` / `paddleocr-vl-1.6` / `pp-ocrv6`
+- **pp-ocrv6 解析 bug 修复**: 原代码误读 `ocrResults[].text`（字段不存在）导致提取为空，改为正确读取 `ocrResults[].prunedResult.rec_texts`（已对照 PaddleOCR 官方文档确认）
+- **模型精度校准**: `mineru_precision` 升 5 星、`nvidia_nemotron-3-nano` 升 4 星、`nvidia_minimax-m3` 实测 batch 降至 3 且精度定为 2 星
+- **文档强化**: 简介合并为「云端大模型 + 本地私有化部署（LM Studio / vLLM）」一体化表述；核心特性新增本地部署、EPUB 元数据 + 版权页提取、多种独立工具等卖点；模型表格补入 `vllm_deepseek-ocr`（共 15 种模型）
+
 ### v4.5.0 (2026-07-19) — "All action results from thought, so it is thoughts that matter."
 - **批处理脚本升级（batch_ocr.bat，功能更新）**:
   - 顶部新增三行可改配置：`PYTHON_EXE`（指定 Python 解释器路径，兼容 Miniconda / 虚拟环境等未注册为默认 python 的情况，真正实现拖放运行）、`MODEL`（默认模型）、`SOURCE`（默认输入源）

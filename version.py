@@ -1,12 +1,12 @@
 # version.py
 # VibeOCR 版本信息
 
-__version__ = "4.5.0"
+__version__ = "4.6.0"
 VERSION = __version__
 
 # 版本发布格言（GitHub Release 标题用，英文双引号由工作流拼接）。
 # 后续由 publish_release.ps1 / 发布工作流自动从 mottos.json 抽取并回写。
-__motto__ = "All action results from thought, so it is thoughts that matter."
+__motto__ = "Character is like a tree and reputation like a shadow. The shadow is what we think of it; the tree is the real thing."
 
 NAME = "VibeOCR"
 DESCRIPTION = "智能端到端书籍 OCR 解决方案 — 多模型 AI 驱动，PDF 到纯文本一键提取 | A Smart End-To-End Book OCR solution powered by AI"
