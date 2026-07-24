@@ -129,6 +129,16 @@ python utils_extract_meta.py -v
 
 > ⚠️ **SiliconFlow 托管模型（`siliconflow_deepseek-ocr` / `siliconflow_paddleocr-vl-1.5`）结果可能不稳定**：实测运行中会随机混入无关文本或乱码（如试卷题目列表），而从官方 API（百度 aistudio / 官方 DeepSeek-OCR）跑同一输入完全正常。推断为 SiliconFlow 上第三方上传的权重副本退化或多租户串扰所致，与本项目代码无关。仅建议作为低成本备选，**勿用于生产 OCR 主线**；稳定精度请走 `mineru_precision` 或 `paddleocr-vl-1.6`/`pp-ocrv6`。
 
+## 🖥️ 模型本地部署指南
+
+想用本地私有化部署的模型（数据不出本机、无需云端 API Key）？下面列出已验证的本地部署方案。
+
+### ⚡ vLLM
+
+- 🔗 **DeepSeek-OCR** — 本地 vLLM 部署教程（Windows WSL）：[DeepSeek-OCR 本地安装与部署指南](https://github.com/k6G52m4Dz75W/VisualFrontier/blob/main/DeepSeek-OCR/DeepSeek-OCR_Local_Installation_and_Deployment_Guide_for_Windows_WSL.md)
+
+> 🚀 **视界先锋（VisualFrontier）**：我的另一个项目，专注于本地大模型与多模态应用的部署实践。欢迎 Star / 关注 👉 [github.com/k6G52m4Dz75W/VisualFrontier](https://github.com/k6G52m4Dz75W/VisualFrontier)
+
 ## 📁 输出文件说明
 
 处理 `book.pdf` 并使用 `nvidia_kimi-k2.6` 模型时，输出：
