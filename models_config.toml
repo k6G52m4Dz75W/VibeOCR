@@ -416,6 +416,7 @@ batch_size = 1
 timeout = 120
 content_format = "openai"
 input_mode = "image"
+note = "注意：DeepSeek-OCR模型无论是按照官方安装指引还是采用vLLM智能安装得到的结果，抑或是硅基流动平台服务部署的结果都极大概率会随机性出现文本乱码或缺失、重复大段文本的问题，强烈建议使用升级后的DeepSeek-OCR-2模型替代。"
 prompt = """
 <image>\n<|grounding|>Convert the document to markdown.
 """
@@ -425,6 +426,30 @@ Accept = "text/event-stream"
 Content-Type = "application/json"
 
 [models.vllm_deepseek-ocr.payload_template]
+max_tokens = 4096
+temperature = 0.0
+stream = true
+skip_special_tokens = false
+vllm_xargs = { ngram_size = 30, window_size = 90, whitelist_token_ids = [128821, 128822] }
+
+[models.vllm_deepseek-ocr-2]
+name = "vLLM - DeepSeek-OCR-2"
+api_url = "http://127.0.0.1:8000/v1/chat/completions"
+model_id = "DeepSeek-OCR-2"
+api_key_env = "none"
+batch_size = 1
+timeout = 120
+content_format = "openai"
+input_mode = "image"
+prompt = """
+<image>\n<|grounding|>Convert the document to markdown.
+"""
+
+[models.vllm_deepseek-ocr-2.headers]
+Accept = "text/event-stream"
+Content-Type = "application/json"
+
+[models.vllm_deepseek-ocr-2.payload_template]
 max_tokens = 4096
 temperature = 0.0
 stream = true

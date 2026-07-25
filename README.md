@@ -109,23 +109,24 @@ python utils_extract_meta.py -v
 |-------------|------|------|
 | <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_deepseek-ocr` | 💰 | ⚠️ |
 | <img src="https://www.google.com/s2/favicons?domain=siliconflow.cn&sz=32" width="16" alt="SiliconFlow"> `siliconflow_paddleocr-vl-1.5` | 💰 | ⚠️ |
-| <img src="https://www.google.com/s2/favicons?domain=mineru.net&sz=32" width="16" alt="MinerU"> `mineru_precision` | 💰 | ⭐⭐⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=paddleocr.ai&sz=32" width="16" alt="PaddleOCR"> `paddleocr-vl-1.6` | 💰 | ⭐⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=paddleocr.ai&sz=32" width="16" alt="PaddleOCR"> `pp-ocrv6` | 💰 | ⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_kimi-k2.6` | 💰 | ⭐⭐⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_minimax-m3` | 💰 | ⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_step-3.7-flash` | 💰 | ⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_nemotron-3-nano` | 💰 | ⭐⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=kimi.com&sz=32" width="16" alt="Moonshot AI"> `kimi-k2.6` | 💰💰💰💰 | ⭐⭐⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=kimi.com&sz=32" width="16" alt="Moonshot AI"> `kimi-k3` | 💰💰💰💰💰 | ⭐⭐⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=openai.com&sz=32" width="16" alt="OpenAI"> `gpt-4o` | 💰💰💰💰💰 | ⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=mineru.net&sz=32" width="16" alt="MinerU"> `mineru_precision` | 💰 | ⭐⭐⭐⭐⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=paddleocr.ai&sz=32" width="16" alt="PaddleOCR"> `paddleocr-vl-1.6` | 💰 | ⭐⭐⭐⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=paddleocr.ai&sz=32" width="16" alt="PaddleOCR"> `pp-ocrv6` | 💰 | ⭐⭐⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_kimi-k2.6` | 💰 | ⭐⭐⭐⭐⭐⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_minimax-m3` | 💰 | ⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_step-3.7-flash` | 💰 | ⭐⭐⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_nemotron-3-nano` | 💰 | ⭐⭐⭐⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=kimi.com&sz=32" width="16" alt="Moonshot AI"> `kimi-k2.6` | 💰💰💰💰 | ⭐⭐⭐⭐⭐⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=kimi.com&sz=32" width="16" alt="Moonshot AI"> `kimi-k3` | 💰💰💰💰💰 | ⭐⭐⭐⭐⭐⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=openai.com&sz=32" width="16" alt="OpenAI"> `gpt-4o` | 💰💰💰💰💰 | - |
 | <img src="https://www.google.com/s2/favicons?domain=anthropic.com&sz=32" width="16" alt="Anthropic"> `claude-sonnet-5` | 💰💰💰💰💰 | — |
-| <img src="https://www.google.com/s2/favicons?domain=lmstudio.ai&sz=32" width="16" alt="LM Studio"> `lmstudio` | 💰💰 | ⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=deepseek.com&sz=32" width="16" alt="DeepSeek"> `vllm_deepseek-ocr` | 💰💰💰 | ⭐⭐⭐ |
-
-> 💡 `claude-sonnet-5` 精度尚未实测，留待后续验证。
+| <img src="https://www.google.com/s2/favicons?domain=lmstudio.ai&sz=32" width="16" alt="LM Studio"> `lmstudio` | 💰💰 | ⭐⭐⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=deepseek.com&sz=32" width="16" alt="DeepSeek"> `vllm_deepseek-ocr-2` | 💰💰💰 | ⭐⭐⭐⭐⭐⭐ |
+| <img src="https://www.google.com/s2/favicons?domain=deepseek.com&sz=32" width="16" alt="DeepSeek"> `vllm_deepseek-ocr` | 💰💰💰 | ⚠️ |
 
 > 💡 **新手上路推荐**: `mineru_precision` （默认模型）
+
+> ⚠️ `gpt-4o`、`claude-sonnet-5` 精度未实测。
 
 > ⚠️ **SiliconFlow 托管模型（`siliconflow_deepseek-ocr` / `siliconflow_paddleocr-vl-1.5`）结果可能不稳定**：实测运行中会随机混入无关文本或乱码（如试卷题目列表），而从官方 API（百度 aistudio / 官方 DeepSeek-OCR）跑同一输入完全正常。推断为 SiliconFlow 上第三方上传的权重副本退化或多租户串扰所致，与本项目代码无关。仅建议作为低成本备选，**勿用于生产 OCR 主线**；稳定精度请走 `mineru_precision` 或 `paddleocr-vl-1.6`/`pp-ocrv6`。
 
@@ -135,7 +136,10 @@ python utils_extract_meta.py -v
 
 ### ⚡ vLLM
 
+- ![DeepSeek](https://www.google.com/s2/favicons?domain=deepseek.com&sz=16) [**DeepSeek-OCR-2**](https://github.com/deepseek-ai/DeepSeek-OCR-2) - [DeepSeek-OCR-2 Windows WSL本地安装部署指南](./DeepSeek-OCR-2/DeepSeek-OCR-2_Local_Installation_and_Deployment_Guide_for_Windows_WSL.md)
 - ![DeepSeek](https://www.google.com/s2/favicons?domain=deepseek.com&sz=16) [**DeepSeek-OCR**](https://github.com/deepseek-ai/DeepSeek-OCR) - [DeepSeek-OCR Windows WSL本地安装部署指南](./DeepSeek-OCR/DeepSeek-OCR_Local_Installation_and_Deployment_Guide_for_Windows_WSL.md)
+
+> ⚠️ 注意：[DeepSeek-OCR](https://github.com/deepseek-ai/DeepSeek-OCR)模型无论是按照官方安装指引还是采用vLLM智能安装得到的结果，抑或是硅基流动平台服务部署的结果都极大概率会随机性出现文本乱码或缺失、重复大段文本的问题，强烈建议使用升级后的[DeepSeek-OCR-2](https://github.com/deepseek-ai/DeepSeek-OCR-2)模型替代。
 
 > 🚀 **视界先锋（Visual Frontier）**：我的另一个项目，专注于本地大模型与多模态应用的部署实践。欢迎 Star / 关注 👉 [github.com/k6G52m4Dz75W/VisualFrontier](https://github.com/k6G52m4Dz75W/VisualFrontier)
 
@@ -159,7 +163,7 @@ VibeOCR/
 ├── .gitignore                 # Git 忽略规则
 ├── requirements.txt           # Python 依赖清单（pip install -r requirements.txt）
 ├── models_config.py           # 模型配置加载器（从 TOML 读取）
-├── models_config.toml         # 模型配置（TOML，15 个内置模型，支持热插拔）
+├── models_config.toml         # 模型配置（TOML，16 个内置模型，支持热插拔）
 ├── postprocess.py             # 后处理流水线入口
 ├── module_cleaning.py         # 文本清理（标签/空行/空白）
 ├── module_punctuation.py      # 英文标点 → 中文全角
@@ -220,9 +224,16 @@ python VibeOCR.py /path/to/book.pdf
 
 | 状态 | 内容 |
 |------|------|
-| ✅ 可用 | 核心 OCR 功能、15 种模型（TOML 配置热插拔，提示词抽离到 `[prompts]`，支持本地免鉴权模型）、批处理、后处理、EPUB 元数据 + 版权页提取 |
+| ✅ 可用 | 核心 OCR 功能、16 种模型（TOML 配置热插拔，提示词抽离到 `[prompts]`，支持本地免鉴权模型）、批处理、后处理、EPUB 元数据 + 版权页提取 |
 
 ## 📝 更新日志
+
+### v4.6.1 (2026-07-25) — "It is not so much our friends' help that helps us, as the confidence of their help."
+- **新增 DeepSeek-OCR-2 本地模型**: `vllm_deepseek-ocr-2`（本地 vLLM 部署、OpenAI 兼容、免鉴权、input_mode=image，含 vllm_xargs 白名单 / skip_special_tokens / stream 透传）
+- **DeepSeek-OCR (v1) 标记已知乱码缺陷**: 经官方安装指引、vLLM 智能安装、硅基流动平台服务三途径复现，均极大概率随机出现文本乱码 / 缺失 / 重复大段文本，强烈建议改用升级后的 DeepSeek-OCR-2；该缺陷与本项目代码无关
+- **模型选择指南校准**: 精度星级整体重排；`vllm_deepseek-ocr-2`（5 星）与 `vllm_deepseek-ocr`（⚠️ 不稳定）纳入主表格
+- **本地部署指南补充**: vLLM 段新增 DeepSeek-OCR-2 条目与 Windows WSL 部署链接，并加 ⚠️ 注意引导改用 ORC-2
+- **文档一致性**: 内置模型数量 15 → 16（项目结构说明、功能清单同步）
 
 ### v4.6.0 (2026-07-24) — "Character is like a tree and reputation like a shadow. The shadow is what we think of it; the tree is the real thing."
 - **本地大模型支持（vLLM）**: 新增 `vllm_deepseek-ocr`（本地 OpenAI 兼容、免鉴权、input_mode=image，含 vllm_xargs / skip_special_tokens / stream 透传）
