@@ -118,7 +118,7 @@ python utils_extract_meta.py -v
 | <img src="https://www.google.com/s2/favicons?domain=nvidia.com&sz=32" width="16" alt="NVIDIA NIM"> `nvidia_nemotron-3-nano` | 💰 | ⭐⭐⭐⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=kimi.com&sz=32" width="16" alt="Moonshot AI"> `kimi-k2.6` | 💰💰💰💰 | ⭐⭐⭐⭐⭐⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=kimi.com&sz=32" width="16" alt="Moonshot AI"> `kimi-k3` | 💰💰💰💰💰 | ⭐⭐⭐⭐⭐⭐⭐⭐⭐ |
-| <img src="https://www.google.com/s2/favicons?domain=openai.com&sz=32" width="16" alt="OpenAI"> `gpt-4o` | 💰💰💰💰💰 | - |
+| <img src="https://www.google.com/s2/favicons?domain=openai.com&sz=32" width="16" alt="OpenAI"> `gpt-4o` | 💰💰💰💰💰 | — |
 | <img src="https://www.google.com/s2/favicons?domain=anthropic.com&sz=32" width="16" alt="Anthropic"> `claude-sonnet-5` | 💰💰💰💰💰 | — |
 | <img src="https://www.google.com/s2/favicons?domain=lmstudio.ai&sz=32" width="16" alt="LM Studio"> `lmstudio` | 💰💰 | ⭐⭐⭐⭐⭐⭐ |
 | <img src="https://www.google.com/s2/favicons?domain=deepseek.com&sz=32" width="16" alt="DeepSeek"> `vllm_deepseek-ocr-2` | 💰💰💰 | ⭐⭐⭐⭐⭐⭐ |
