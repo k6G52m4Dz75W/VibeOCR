@@ -1,7 +1,7 @@
 # version.py
 # VibeOCR 版本信息
 
-__version__ = "4.6.1"
+__version__ = "4.7.0"
 VERSION = __version__
 
 # 版本发布格言（GitHub Release 标题用，英文双引号由工作流拼接）。

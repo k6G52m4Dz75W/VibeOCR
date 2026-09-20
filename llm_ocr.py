@@ -90,7 +90,8 @@ def load_model_config(model_key: str | None = None) -> dict[str, Any]:
 # ======================================================================
 
 def pdf_pages_to_b64(pdf_path: str, dpi: int = 300, max_width: int = 1600,
-                     page_range: str | None = None) -> tuple[list[dict[str, Any]], int]:
+                     page_range: str | None = None,
+                     crop_cfg: dict | None = None) -> tuple[list[dict[str, Any]], int]:
     """
     将 PDF 页面转换为 base64 图片列表。
 
@@ -99,6 +100,8 @@ def pdf_pages_to_b64(pdf_path: str, dpi: int = 300, max_width: int = 1600,
         dpi: 渲染 DPI
         max_width: 图片最大宽度（px）
         page_range: 页码范围，如 "1-3" 或 "1"（None 表示全部）
+        crop_cfg: 页眉页脚裁剪配置（None 或 {"enabled":False} 时不裁剪）；
+                  启用时先渲染所有页做多页对齐检测，再逐页裁+编码。
 
     Returns:
         (images, total_pages) — images 是 OpenAI 兼容的图片消息列表
@@ -119,17 +122,35 @@ def pdf_pages_to_b64(pdf_path: str, dpi: int = 300, max_width: int = 1600,
         start = 0
         end = total
 
-    images = []
+    # 第一遍：渲染所有页为 PIL（含 resize），保留用于跨页检测
+    pages = []
     for i in range(start, end):
         page = doc[i]
         pix = page.get_pixmap(matrix=fitz.Matrix(dpi / 72, dpi / 72))
         img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-
         if img.width > max_width:
             ratio = max_width / img.width
             new_height = int(img.height * ratio)
             img = img.resize((max_width, new_height), Image.LANCZOS)
+        pages.append(img)
 
+    # 多页对齐检测 + 裁剪（启用时）
+    if crop_cfg and crop_cfg.get("enabled"):
+        from utils_crop_header_footer import detect_header_footer_bounds, crop_image
+        top_rel, bottom_rel = detect_header_footer_bounds(
+            pages,
+            top_max=crop_cfg.get("top_max", 0.18),
+            bottom_max=crop_cfg.get("bottom_max", 0.18),
+            safety=crop_cfg.get("safety", 10),
+            bottom_safety=crop_cfg.get("bottom_safety", 12),
+            foot_thr=crop_cfg.get("foot_thr", 0.60),
+        )
+        pages = [crop_image(im, top_rel, bottom_rel) for im in pages]
+        print(f"  ✂️ 已裁页眉页脚 (top={top_rel:.3f} bottom={bottom_rel:.3f})")
+
+    # 第二遍：逐页转 base64
+    images = []
+    for idx, img in enumerate(pages):
         buf = BytesIO()
         img.save(buf, format="PNG", optimize=True)
         b64 = base64.b64encode(buf.getvalue()).decode()
@@ -140,19 +161,33 @@ def pdf_pages_to_b64(pdf_path: str, dpi: int = 300, max_width: int = 1600,
         })
         size_kb = len(buf.getvalue()) / 1024
         total_info = f" (共{total}页)" if total > 1 else ""
-        print(f"  第{i+1}/{total}页已编码 ({int(size_kb)}KB){total_info}")
+        print(f"  第{start+idx+1}/{total}页已编码 ({int(size_kb)}KB){total_info}")
 
     doc.close()
     return images, end - start
 
 
-def image_file_to_b64(image_path: str, max_width: int = 1600) -> list[dict[str, Any]]:
+def image_file_to_b64(image_path: str, max_width: int = 1600,
+                      crop_cfg: dict | None = None) -> list[dict[str, Any]]:
     """将单张图片文件转换为 base64 图片消息列表"""
     img = Image.open(image_path)
     if img.width > max_width:
         ratio = max_width / img.width
         new_h = int(img.height * ratio)
         img = img.resize((max_width, new_h), Image.LANCZOS)
+
+    if crop_cfg and crop_cfg.get("enabled"):
+        from utils_crop_header_footer import detect_header_footer_bounds, crop_image
+        top_rel, bottom_rel = detect_header_footer_bounds(
+            [img],
+            top_max=crop_cfg.get("top_max", 0.18),
+            bottom_max=crop_cfg.get("bottom_max", 0.18),
+            safety=crop_cfg.get("safety", 10),
+            bottom_safety=crop_cfg.get("bottom_safety", 12),
+            foot_thr=crop_cfg.get("foot_thr", 0.60),
+        )
+        img = crop_image(img, top_rel, bottom_rel)
+        print(f"  ✂️ 已裁页眉页脚 (top={top_rel:.3f} bottom={bottom_rel:.3f})")
 
     buf = BytesIO()
     img.save(buf, format="PNG", optimize=True)

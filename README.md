@@ -15,6 +15,7 @@
 - 🔄 **多模型支持** — 支持多种模型/API，根据精度和成本灵活切换
 - 🖥️ **本地大模型部署** — 支持私有化部署的推理后端，包括 LM Studio（OpenAI 兼容本地服务）与 vLLM（自托管 OpenAI 兼容服务），数据不出本机、无需云端 API Key
 - 📄 **PDF 直传** — 异步模式支持整个 PDF 直接上传（PaddleOCR-VL / PP-OCRv6 / MinerU），无需预先转图片
+- ✂️ **自动裁剪页眉页脚** — 纯 numpy 跨页统计自动识别并裁除页眉 / 页码 / 页脚，避免噪声混入模型输入（默认关闭，详见「高级用法 → 自动裁剪页眉页脚」）
 - 🧹 **智能后处理** — 自动清理 OCR 标签、合并断行段落、转换标点为中文全角
 - 📝 **EPUB 元数据 + 版权页提取** — 从版权页自动识别并提取书名、作者、出版信息，生成 meta.yaml 与 COPYRIGHT.md
 - 🧰 **多种独立工具** — 拆分、预处理、元数据提取等模块均可单独调用，不依赖完整管线
@@ -172,6 +173,7 @@ VibeOCR/
 ├── utils_clean_text.py        # 独立文本清理 CLI
 ├── utils_map_p_br.py          # OCR 段落空白映射工具
 ├── utils_insert_pagebreak.py  # EPUB 标准分页符嵌入工具
+├── utils_crop_header_footer.py # 自动裁剪页眉页脚工具（纯 numpy，可独立 CLI 调用）
 ├── batch_ocr.bat              # Windows 批处理脚本（支持顶部指定 PYTHON_EXE / MODEL / SOURCE）
 ├── batch_ocr_notes.txt        # 批处理脚本使用说明（Python 路径、默认模型、拖放/双击用法）
 ├── README.md                  # 项目介绍
@@ -203,6 +205,38 @@ prompt_ref = "default"   # 引用 [prompts] 中的命名提示词（推荐）
 - 也可直接写内联 `prompt = """..."""` 做一次性覆盖（旧格式仍兼容）
 - 模型未指定 `prompt_ref` 时，回退到 `[defaults]` 中的 `default_prompt`（当前为 `default`）
 
+### 自动裁剪页眉页脚
+
+扫描件常带页眉、页码、页脚，会把噪声一并喂给模型。`utils_crop_header_footer.py` 用**纯 numpy 跨页统计**自动定位并裁除，不引入 OpenCV 等重依赖：
+
+- **顶部 low_frac 法** — 逐行统计「像素方差低于阈值」的页数占比。页眉在绝大多数页重复出现 → 占比高；单页装饰图案只占 1/N → 不会被误判成全局页眉。
+- **底部 ink_frac 法** — 逐行统计「有墨页数占比」。页码 / 页脚在几乎每页的同一垂直位置重复 → 占比 ≈ 1.0；正文末行每页内容不同 → 占比低。自底向上定位页脚带，取其顶端作为裁剪下界。
+
+整体策略是**宁可漏裁、绝不误裁**，检测与 DPI 无关、随文档自适应。
+
+在 `models_config.toml` 的 `[preprocessing]` 段开启（对所有模型生效）：
+
+```toml
+[preprocessing]
+crop_header_footer = true   # 默认 false（关闭）
+top_max = 0.18              # 页眉最多裁掉的比例上限
+bottom_max = 0.18           # 页脚最多裁掉的比例上限
+safety = 10                 # 顶部安全余量（检测行数，往内收）
+bottom_safety = 12          # 底部安全余量（确保整条页脚被裁掉）
+foot_thr = 0.60             # 判定为页脚带的「有墨页占比」阈值
+```
+
+开启后，`pdf_pages_to_b64` / `image_file_to_b64` 会在转 base64 前自动逐页裁剪。注意 **PDF 原生直传路径**（`input_mode = "pdf"`，如 PaddleOCR-VL / MinerU）不经过栅格化，因此不适用本裁剪。
+
+也可以先当独立工具试跑、确认效果：
+
+```bash
+python utils_crop_header_footer.py input.pdf --out ./cropped
+python utils_crop_header_footer.py input.pdf --out ./cropped --to-pdf   # 合并输出为单个 PDF
+```
+
+> **⚠️ 默认关闭**：目前已用同一书系的 10 本扫描 PDF（共 273 页）验证——页脚 100% 裁除、正文零误裁。但样本版式较为同质，建议先用上面的命令在你的材料上试跑确认无误，再改 `crop_header_footer = true` 默认开启。
+
 ### Docker / 无头服务器
 
 ```bash
@@ -225,6 +259,7 @@ python VibeOCR.py /path/to/book.pdf
 | 状态 | 内容 |
 |------|------|
 | ✅ 可用 | 核心 OCR 功能、16 种模型（TOML 配置热插拔，提示词抽离到 `[prompts]`，支持本地免鉴权模型）、批处理、后处理、EPUB 元数据 + 版权页提取 |
+| 🧪 实验性 | 自动裁剪页眉页脚（`[preprocessing].crop_header_footer`，默认关闭，需自行验证后开启） |
 
 ## 📝 更新日志
 

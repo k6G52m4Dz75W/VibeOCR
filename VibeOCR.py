@@ -592,10 +592,24 @@ def run_async_ocr(config: dict[str, Any], pdf_path: str) -> tuple[list[str], lis
 
 
 def run_llm_ocr(config: dict[str, Any], pdf_path: str, skip: list[str] | None = None) -> None:
-    """运行 LLM OCR 模式：PDF转图片 -> 分批OCR -> 保存结果"""
+    """运行 LLM OCR 模式：PDF转图片 -> [可选裁页眉页脚] -> 分批OCR -> 保存结果"""
     model_key = config["model_key"]
     batch_size = config.get("batch_size", 1)
     basename = os.path.splitext(pdf_path)[0]
+
+    # 读取全局预处理配置（页眉页脚裁剪，默认关闭）
+    crop_cfg = None
+    pre = CONFIGS.get("preprocessing", {})
+    if pre.get("crop_header_footer"):
+        crop_cfg = {
+            "enabled": True,
+            "top_max": pre.get("top_max", 0.18),
+            "bottom_max": pre.get("bottom_max", 0.18),
+            "safety": pre.get("safety", 10),
+            "bottom_safety": pre.get("bottom_safety", 12),
+            "foot_thr": pre.get("foot_thr", 0.60),
+        }
+        print("✂️ 已启用页眉页脚裁剪预处理")
 
     # 输入模式分流：原生支持 PDF 的模型直传每页 PDF，否则栅格化为图片
     input_mode = config.get("input_mode", "image")
@@ -604,7 +618,7 @@ def run_llm_ocr(config: dict[str, Any], pdf_path: str, skip: list[str] | None = 
         all_blocks, total_pages = pdf_pages_to_pdf_b64(pdf_path)
     else:
         print("🔧 PDF 转图片（input_mode=image）...")
-        all_blocks, total_pages = pdf_pages_to_b64(pdf_path)
+        all_blocks, total_pages = pdf_pages_to_b64(pdf_path, crop_cfg=crop_cfg)
     print(f"\n🚀 开始OCR（共{total_pages}页）...")
 
     # 分批运行OCR
