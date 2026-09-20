@@ -8,7 +8,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 if (-not $Version) {
-    $m = Select-String -Path $VersionPyFile -Pattern '__version__\s*=\s*[''"]）（[^''"]+）[''"]'
+    $m = Select-String -Path $VersionPyFile -Pattern '__version__\s*=\s*[''"]([^''"]+)[''"]' -Encoding UTF8
     $cur = $m.Matches.Groups[1].Value
     $p = $cur.Split('.')
     $p[2] = ([int]$p[2] + 1).ToString()
@@ -17,8 +17,16 @@ if (-not $Version) {
 }
 
 $mottos = (Get-Content $MottosFile -Encoding UTF8 | ConvertFrom-Json).mottos
-$readme = Get-Content $ReadmeFile -Encoding UTF8 -Raw
-$used = [regex]::Matches($readme, '\u201c([^\u201d]+)\u201d') | ForEach-Object { $_.Groups[1].Value.ToLower() }
+# 去重：只从更新日志标题行提取已用格言。
+# 不要对全文做引号配对正则 —— README 正文有大量 HTML 属性引号（<img src="..." alt="..." />），
+# 一旦配对错位就会漏掉历史格言，导致重复挑选。
+# 兼容直引号 " 与弯引号 ""；分隔符兼容 — / – / -
+$used = @()
+foreach ($line in (Get-Content $ReadmeFile -Encoding UTF8)) {
+    if ($line -match '^#{2,3}\s*v?\d+\.\d+(?:\.\d+)?\s*\([^)]*\)\s*[\u2014\u2013-]+\s*[\u201c"](.+)[\u201d"]\s*$') {
+        $used += $matches[1].ToLower()
+    }
+}
 $candidates = $mottos | Where-Object { $used -notcontains $_.ToLower() }
 
 if ($candidates.Count -eq 0) {
@@ -41,7 +49,7 @@ if ($ans -notmatch '^[yY]') {
 
 $today = (Get-Date).ToString('yyyy-MM-dd')
 
-$prefix = (Get-Content $VersionPyFile -Encoding UTF8) -replace '__version__\s*=\s*[''"]）（[^''"]+）[''"]', "__version__ = ""$Version"""
+$prefix = (Get-Content $VersionPyFile -Encoding UTF8) -replace '__version__\s*=\s*[''"]([^''"]+)[''"]', "__version__ = ""$Version"""
 $prefix | ForEach-Object {
     if ($_ -match '__motto__\s*=') { "__motto__ = ""$picked""" } else { $_ }
 } | Set-Content $VersionPyFile -Encoding UTF8
