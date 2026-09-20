@@ -263,6 +263,20 @@ python VibeOCR.py /path/to/book.pdf
 
 ## 📝 更新日志
 
+### v4.7.1 (2026-09-21) — "The universe is made of stories, not atoms."
+- **新增自动裁剪页眉页脚工具** `utils_crop_header_footer.py`：纯 numpy 跨页统计自动识别并裁除页眉 / 页码 / 页脚，**不引入 OpenCV 等重依赖**
+  - 顶部 `low_frac` 法：只裁「跨页低方差」的重复页眉，**免疫单页装饰图案**（如正文开头的插画）
+  - 底部 `ink_frac` 法：页脚在每页同一位置重复 → 有墨页占比接近 1，自底向上定位页脚带顶端并整条裁除
+  - 策略「宁可漏裁、绝不误裁」，检测与 DPI 无关、随文档自适应，支持独立 CLI 试跑
+- **接入 `[preprocessing].crop_header_footer` 开关**（默认 `false`，**不改变现有行为**）
+  - 作用于栅格化路径 `pdf_pages_to_b64` / `image_file_to_b64`；PDF 原生直传路径不经栅格化，不适用
+  - 修复 pipeline 调用传参不一致（原传 `std_factor`，函数签名无此参数，一旦开启即崩溃）
+- **实测验证**：10 本扫描 PDF 共 273 页，页脚 100% 裁除、正文零误裁
+- **MinerU 云端 API 配置对照官方文档核验**：确认已为最新 v4 且无需迁移 —— 基址 `https://mineru.net/api/v4`，端点 `file-urls/batch` 与 `extract-results/batch/{batch_id}` 与文档逐字一致，`model_version=vlm` 为官方推荐值
+  - 补充限制说明：≤200MB / ≤200 页，批量单次 ≤50 链接、单账号 ≤200 文件，每天 1000 页高优先级额度
+  - 补充三条注意事项：扫描件务必开 `is_ocr`；解析 HTML 时 `model_version` 必须改为 `MinerU-HTML`；**勿把开源 MinerU 4.0 的 `flash`/`basic`/`standard`/`advanced` 档位名填入云端 API**（二者是不同体系）
+  - 补充 `page_ranges` 注释示例（代码中早已支持，此前未在配置中暴露）
+
 ### v4.6.1 (2026-07-25) — "It is not so much our friends' help that helps us, as the confidence of their help."
 - **新增 DeepSeek-OCR-2 本地模型**: `vllm_deepseek-ocr-2`（本地 vLLM 部署、OpenAI 兼容、免鉴权、input_mode=image，含 vllm_xargs 白名单 / skip_special_tokens / stream 透传）
 - **DeepSeek-OCR (v1) 标记已知乱码缺陷**: 经官方安装指引、vLLM 智能安装、硅基流动平台服务三途径复现，均极大概率随机出现文本乱码 / 缺失 / 重复大段文本，强烈建议改用升级后的 DeepSeek-OCR-2；该缺陷与本项目代码无关

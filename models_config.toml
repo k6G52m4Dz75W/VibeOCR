@@ -382,7 +382,7 @@ api_url = "https://mineru.net/api/v4"
 api_key_env = "MINERU_API_KEY"
 batch_size = 1
 content_format = "mineru_async"
-note = "MinerU 高精度提取API。支持200MB/200页。流程：申请上传URL -> PUT上传文件 -> 轮询batch结果 -> 下载zip提取full.md。扫描件请务必开启is_ocr。"
+note = "MinerU 云端精准解析 API（/api/v4 为当前最新版本，已对照官方文档核验）。限制：单文件 ≤200MB / ≤200 页；批量单次申请 ≤50 个上传链接、单账号 ≤200 个文件，另有每天 1000 页高优先级额度。流程：POST /file-urls/batch 申请上传URL -> PUT 上传文件 -> 轮询 GET /extract-results/batch/{batch_id} -> 下载 full_zip_url 解压取 full.md。注意：①扫描件请务必开启 is_ocr；②解析 HTML 文件时 model_version 必须显式改为 MinerU-HTML；③官方推荐 model_version=vlm（默认值为 pipeline）。"
 prompt_ref = ""
 
 [models.mineru_precision.headers]
@@ -396,6 +396,11 @@ enable_formula = true
 enable_table = true
 language = "ch"
 extra_formats = []
+# page_ranges = "1-10"
+# 可选：只解析指定页码，格式如 "2,4-6" 或 "2--2"（倒数第二页）。
+# 代码会把它放进 files[0].page_ranges 传给 MinerU。
+# 注：官方另有 data_id / callback / seed / no_cache / cache_tolerance 等可选参数，
+#     当前 VibeOCR 尚未透传，暂不支持。
 
 # ============================================================
 # LM Studio
